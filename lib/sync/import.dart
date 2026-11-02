@@ -68,11 +68,14 @@ ImportSonucu importEt(Veri yerel, String metin) {
   return ImportSonucu(v, r);
 }
 
-/// Yerelde silme kaydı varsa ve dosyadaki canlı kayıt ondan ESKİYSE kayıt silik kalır.
-/// Eşitlikte kayıt kalır/canlanır (veri kaybetmemek için).
-bool _silikKalir(Veri v, String kind, String uid, DateTime guncelleme) {
-  final m = v.mezarlar['$kind:$uid'];
-  return m != null && guncelleme.isBefore(m.deletedAt);
+/// Dosyadaki canlı kayıt, yerel VEYA dosyanın kendi silme kaydından kesin ESKİYSE
+/// canlanmaz (eklenip hemen silinmesin diye baştan elenir). Eşitlikte kayıt kalır/canlanır
+/// (veri kaybetmemek için).
+bool _silikKalir(Veri v, Veri dosya, String kind, String uid, DateTime guncelleme) {
+  for (final m in [v.mezarlar['$kind:$uid'], dosya.mezarlar['$kind:$uid']]) {
+    if (m != null && guncelleme.isBefore(m.deletedAt)) return true;
+  }
+  return false;
 }
 
 void _takvimler(Veri v, Veri dosya, ImportRaporu r) {
@@ -100,7 +103,7 @@ void _takvimler(Veri v, Veri dosya, ImportRaporu r) {
       r.calendar.updated++;
       continue;
     }
-    if (_silikKalir(v, 'calendar', fc.uid, fc.updatedAt)) continue;
+    if (_silikKalir(v, dosya, 'calendar', fc.uid, fc.updatedAt)) continue;
     v.calendars[fc.uid] = fc;
     v.mezarlar.remove('calendar:${fc.uid}');
     r.calendar.added++;
@@ -111,7 +114,7 @@ void _etkinlikler(Veri v, Veri dosya, ImportRaporu r) {
   for (final fe in dosya.events.values) {
     final yerel = v.events[fe.uid];
     if (yerel != null && !fe.updatedAt.isAfter(yerel.updatedAt)) continue;
-    if (yerel == null && _silikKalir(v, 'event', fe.uid, fe.updatedAt)) continue;
+    if (yerel == null && _silikKalir(v, dosya, 'event', fe.uid, fe.updatedAt)) continue;
     // Yetim: takvimi yerelde yok (silinmiş). Eklenmez, "atlandı" sayılır.
     if (!v.calendars.containsKey(fe.calendarUid)) {
       r.event.skipped++;
@@ -132,7 +135,7 @@ void _gorevler(Veri v, Veri dosya, ImportRaporu r) {
   for (final ft in dosya.tasks.values) {
     final yerel = v.tasks[ft.uid];
     if (yerel != null && !ft.updatedAt.isAfter(yerel.updatedAt)) continue;
-    if (yerel == null && _silikKalir(v, 'task', ft.uid, ft.updatedAt)) continue;
+    if (yerel == null && _silikKalir(v, dosya, 'task', ft.uid, ft.updatedAt)) continue;
 
     var gelen = ft;
     final blok = ft.eventUid;

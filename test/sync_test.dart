@@ -113,6 +113,14 @@ void main() {
       expect(s2.rapor.deleted, 0);
     });
 
+    test('dosyanın kendi mezar taşından eski canlı kayıt eklenmez (ekle-sonra-sil sayımı yok)', () {
+      final uzak = veri(takvimler: [cal('c1', 'K', eski)], etkinlikler: [ev('e1', orta)], mezarlar: [mezar('event', 'e1', yeni)]);
+      final s = iceri(veri(takvimler: [cal('c1', 'K', eski)]), uzak);
+      expect(s.veri.events, isEmpty);
+      expect(s.veri.mezarlar['event:e1']!.deletedAt, t(yeni));
+      expect([s.rapor.added, s.rapor.deleted], [0, 0]);
+    });
+
     test('görev silme (iki yön)', () {
       final yerel = veri(gorevler: [gorev('g1', orta)]);
       expect(iceri(yerel, veri(mezarlar: [mezar('task', 'g1', yeni)])).veri.tasks, isEmpty);
