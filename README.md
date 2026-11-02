@@ -12,7 +12,7 @@ Bu aşamada yalnızca veri katmanı ve senkron mantığı var; arayüz sonraki a
   (`recurrence.dart`), hatırlatıcılar, bellekteki durum ve mutasyon kuralları (`veri.dart`).
 - `lib/store/` kalıcılık: tek JSON dosyası, atomik yazma, bozulmada son sağlam yedeğe dönüş.
 - `lib/sync/` `export.dart` (tam durum) ve `import.dart` (birleştirme, rapor).
-- `test/` birim testleri; `test/uyum_test.dart` açılımı masaüstü çıktısıyla birebir karşılaştırır.
+- `test/` birim testleri; `test/uyum_test.dart` ve `test/uyum_masaustu_test.dart` açılımı masaüstü çıktısıyla (fixture) birebir karşılaştırır.
 - `tool/uyum_uret.py` uyum fixture'ını masaüstü açıcısından üretir (masaüstü deposu okunur, değişmez).
 
 ## Komutlar
