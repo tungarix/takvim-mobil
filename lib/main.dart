@@ -26,7 +26,8 @@ Future<void> main() async {
       tzid = await kopru.saatDilimi();
       konumBul(tzid); // tanınmayan ad varsayılana düşer
     } on FormatException {
-      tzid = 'Europe/Istanbul';
+      // Veritabanında olmayan ad (ör. "GMT"): sapma sıfırsa Etc/UTC, değilse masaüstüyle aynı varsayılan.
+      tzid = DateTime.now().timeZoneOffset == Duration.zero ? 'Etc/UTC' : 'Europe/Istanbul';
     }
     final store = await TakvimStore.ac(File('${dizinler.veri}/takvim.json'));
     final ayarlar = await Ayarlar.ac(File('${dizinler.veri}/ayarlar.json'));

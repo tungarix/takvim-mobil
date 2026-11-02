@@ -37,7 +37,7 @@ class SaatIzgarasi extends StatefulWidget {
 
 class _SaatIzgarasiDurumu extends State<SaatIzgarasi> {
   late final ScrollController _dikey;
-  final _etiketKaydirma = ScrollController();
+  late final ScrollController _etiketKaydirma;
   final _yatay = ScrollController();
   Timer? _zamanlayici;
   bool _yatayAyarlandi = false;
@@ -48,6 +48,8 @@ class _SaatIzgarasiDurumu extends State<SaatIzgarasi> {
     final k = widget.kontrol;
     final bugunMu = widget.gunler.contains(k.bugun);
     final saat = bugunMu ? (k.zaman.duvar(k.simdi).hour - 1).clamp(0, 18) : 7;
+    // Etiket sütunu da aynı başlangıç konumuyla açılır (yoksa saat etiketleri ızgaradan bir saat kayık görünür).
+    _etiketKaydirma = ScrollController(initialScrollOffset: saat * saatYuksekligi);
     _dikey = ScrollController(initialScrollOffset: saat * saatYuksekligi)..addListener(_etiketleriEsle);
     // Şimdi çizgisi dakikada bir ilerler; widget kalkınca iptal edilir.
     _zamanlayici = Timer.periodic(const Duration(minutes: 1), (_) {
