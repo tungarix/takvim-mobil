@@ -13,6 +13,7 @@ import java.util.TimeZone
 /**
  * Dart ile köprü (ek paket yok):
  *  - saatDilimi: cihazın IANA saat dilimi,
+ *  - dizinler: uygulamaya özel veri ve geçici klasör yolları (path_provider yerine; o paket yerel JNI/NDK ister),
  *  - bekleyenDosya: "Birlikte aç / Paylaş" ile gelen .takvimsync içeriği (bir kez verilir),
  *  - dosyaGeldi (Kotlin -> Dart): uygulama açıkken yeni dosya gelirse içerik itilir.
  * İçerik burada UTF-8 metne çevrilir; sınırı aşan ya da okunamayan dosya anlaşılır hata olur.
@@ -41,6 +42,8 @@ class MainActivity : FlutterActivity() {
             k.setMethodCallHandler { cagri, sonuc ->
                 when (cagri.method) {
                     "saatDilimi" -> sonuc.success(TimeZone.getDefault().id)
+                    // Uygulamaya özel kalıcı klasör (veri) ve geçici klasör (paylaşılacak dosya).
+                    "dizinler" -> sonuc.success(mapOf("veri" to filesDir.absolutePath, "gecici" to cacheDir.absolutePath))
                     "bekleyenDosya" -> {
                         dartHazir = true
                         val b = bekleyen

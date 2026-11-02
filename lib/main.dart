@@ -4,7 +4,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'app/kontrol.dart';
 import 'core/yerel_zaman.dart';
@@ -21,7 +20,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final kopru = AndroidKopru();
   try {
-    final dizin = await getApplicationSupportDirectory();
+    final dizinler = await kopru.dizinler();
     var tzid = 'Europe/Istanbul';
     try {
       tzid = await kopru.saatDilimi();
@@ -29,14 +28,14 @@ Future<void> main() async {
     } on FormatException {
       tzid = 'Europe/Istanbul';
     }
-    final store = await TakvimStore.ac(File('${dizin.path}/takvim.json'));
-    final ayarlar = await Ayarlar.ac(File('${dizin.path}/ayarlar.json'));
+    final store = await TakvimStore.ac(File('${dizinler.veri}/takvim.json'));
+    final ayarlar = await Ayarlar.ac(File('${dizinler.veri}/ayarlar.json'));
     final kontrol = TakvimKontrol(
       store: store,
       ayarlar: ayarlar,
       zaman: YerelZaman(tzid),
       bildirim: YerelBildirimler(),
-      dosyalar: SistemDosyaServisi(),
+      dosyalar: SistemDosyaServisi(dizinler.gecici),
     );
     runApp(TakvimUygulamasi(kontrol: kontrol, kopru: kopru));
     await kontrol.baslat();

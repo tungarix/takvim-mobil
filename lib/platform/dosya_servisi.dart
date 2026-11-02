@@ -2,7 +2,6 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 abstract class DosyaServisi {
@@ -14,6 +13,11 @@ abstract class DosyaServisi {
 }
 
 class SistemDosyaServisi implements DosyaServisi {
+  SistemDosyaServisi(this.geciciKlasor);
+
+  /// Paylaşılacak dosyanın yazılacağı geçici (uygulamaya özel önbellek) klasör.
+  final String geciciKlasor;
+
   @override
   Future<String?> senkronDosyasiSec() async {
     final f = await FilePicker.pickFile(type: FileType.any);
@@ -29,8 +33,7 @@ class SistemDosyaServisi implements DosyaServisi {
 
   @override
   Future<void> paylas(String metin, String dosyaAdi) async {
-    final dir = await getTemporaryDirectory();
-    final dosya = File('${dir.path}/$dosyaAdi');
+    final dosya = File('$geciciKlasor/$dosyaAdi');
     await dosya.writeAsString(metin, flush: true);
     await SharePlus.instance.share(ShareParams(files: [XFile(dosya.path, mimeType: 'application/octet-stream')]));
   }

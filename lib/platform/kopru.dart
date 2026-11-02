@@ -1,5 +1,6 @@
 // Android ile köprü: MainActivity'nin method channel'ı (ek paket yok).
 //  - saatDilimi: cihazın IANA saat dilimi (DateTime.timeZoneName güvenilmez),
+//  - dizinler: uygulamaya özel veri/geçici klasör (path_provider yerine: o paket yerel JNI/NDK derlemesi ister),
 //  - bekleyenDosya: uygulama "Birlikte aç / Paylaş" ile .takvimsync alınarak açıldıysa içeriği,
 //  - dosyaGeldi: uygulama açıkken yeni dosya gelirse Kotlin'in Dart'a göndermesi.
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ class GelenDosya {
 
 abstract class Kopru {
   Future<String> saatDilimi();
+  Future<({String veri, String gecici})> dizinler();
   Future<GelenDosya?> bekleyenDosya();
   void dosyaDinle(void Function(GelenDosya) f);
 }
@@ -24,6 +26,12 @@ class AndroidKopru implements Kopru {
 
   @override
   Future<String> saatDilimi() async => (await _kanal.invokeMethod<String>('saatDilimi')) ?? 'Europe/Istanbul';
+
+  @override
+  Future<({String veri, String gecici})> dizinler() async {
+    final m = await _kanal.invokeMapMethod<String, String>('dizinler');
+    return (veri: m!['veri']!, gecici: m['gecici']!);
+  }
 
   @override
   Future<GelenDosya?> bekleyenDosya() async => _coz(await _kanal.invokeMethod<Object?>('bekleyenDosya'));

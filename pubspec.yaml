@@ -24,9 +24,6 @@ dependencies:
   # test/uyum_test.dart ile doğrulanır; ayrılırsa kendi açıcıya geçilir.
   rrule: ^0.2.18
 
-  # Uygulamaya özel veri klasörü (takvim.json) ve senkron dosyası için geçici
-  # klasör; dart:io tek başına Android'de bu yolları vermez.
-  path_provider: ^2.1.6
   # "Senkron dosyası gönder": .takvimsync dosyasını sistem Paylaş menüsüyle
   # (WhatsApp, Drive, e-posta...) masaüstüne iletir; ağ erişimi gerektirmez.
   share_plus: ^13.3.1
@@ -44,3 +41,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+dependency_overrides:
+  # share_plus dolaylı olarak path_provider ister. path_provider_android 2.3'ten itibaren JNI
+  # (yerel kod, NDK + CMake derlemesi) kullanıyor; bu uygulamada paylaşım için gerekmiyor ve
+  # derleme ortamını ağırlaştırıyor. 2.2.x saf Kotlin/Pigeon'dur.
+  path_provider_android: '>=2.2.0 <2.3.0'

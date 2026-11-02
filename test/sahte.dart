@@ -61,6 +61,9 @@ class SahteKopru implements Kopru {
 
   @override
   Future<String> saatDilimi() async => 'Europe/Istanbul';
+
+  @override
+  Future<({String veri, String gecici})> dizinler() async => (veri: '.', gecici: '.');
 }
 
 typedef Kurulum = ({TakvimKontrol k, SahteBildirim bildirim, SahteDosyalar dosyalar, Directory dizin});

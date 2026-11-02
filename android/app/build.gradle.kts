@@ -9,6 +9,14 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    // Uygulamanın kendi yerel kodu yok; .so dosyaları Flutter motorunundur ve zaten hazır gelir.
+    // Sembol ayıklama (NDK'nın llvm-strip'i) atlanır: derleme NDK kurulumuna bağlı kalmasın.
+    packaging {
+        jniLibs {
+            keepDebugSymbols += setOf("**/*.so")
+        }
+    }
+
     compileOptions {
         // flutter_local_notifications zamanlı bildirimler için java.time desugaring ister.
         isCoreLibraryDesugaringEnabled = true
