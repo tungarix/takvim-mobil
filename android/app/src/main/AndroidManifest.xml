@@ -1,8 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET YOK: uygulama tamamen çevrimdışıdır (debug manifest'inki yalnız geliştirme içindir). -->
+    <!-- Android 13+: hatırlatıcı bildirimi göstermek için çalışma zamanı izni. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Cihaz yeniden başlayınca alarmlar yeniden kurulsun. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Tam zamanlı hatırlatıcı: Android 13+ta USE_EXACT_ALARM (takvim uygulamaları için kendiliğinden verilir,
+         Play dışı dağıtımda kısıt yok); Android 12'de kullanıcının verdiği SCHEDULE_EXACT_ALARM. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32"/>
+
     <application
         android:label="Takvim"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -24,12 +35,49 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- .takvimsync dosyasına dokununca (dosya yöneticisi, WhatsApp, Drive...) "Birlikte aç".
+                 Filtreler dar tutuldu: kendi mime türümüz ya da .takvimsync uzantısı. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content" android:mimeType="application/x-takvimsync"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content" android:host="*" android:mimeType="*/*"/>
+                <!-- pathPattern'de "." her şeyi yutar; uzantı öncesi nokta sayısı değişebildiği için üç kalıp. -->
+                <data android:pathPattern=".*\\.takvimsync"/>
+                <data android:pathPattern=".*\\..*\\.takvimsync"/>
+                <data android:pathPattern=".*\\..*\\..*\\.takvimsync"/>
+            </intent-filter>
+            <!-- Paylaş menüsünden: uzantı süzülemez, bu yüzden yalnız belirsiz-ikili ve kendi mime türümüz. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="application/x-takvimsync"/>
+                <data android:mimeType="application/octet-stream"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Planlı bildirimleri gösteren ve yeniden başlatmada yeniden kuran alıcılar (flutter_local_notifications). -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
