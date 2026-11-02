@@ -1,0 +1,27 @@
+name: takvim
+description: "Takvim: cevrimdisi takvim ve gorev uygulamasi (Android)"
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Saat dilimi veritabanı (IANA). DST'de duvar saatini korumak için tzid'e
+  # göre yerel saat hesabı şart; Dart çekirdeğinde saat dilimi yok.
+  timezone: ^0.11.2
+  # RRULE açıcısı (dateutil karşılığı). Sonuçların masaüstüyle aynı olduğu
+  # test/uyum_test.dart ile doğrulanır; ayrılırsa kendi açıcıya geçilir.
+  rrule: ^0.2.18
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
