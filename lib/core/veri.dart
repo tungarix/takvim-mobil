@@ -10,6 +10,7 @@ import 'dart:math';
 
 import 'models.dart';
 import 'recurrence.dart';
+import 'seri_bol.dart';
 import 'zaman.dart';
 
 String _hex(Random r, int bayt) => List.generate(bayt, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
@@ -187,6 +188,25 @@ class Veri {
     }
   }
 
+  /// "Bu ve sonrakiler": seriyi `split` (bir örneğin ORİJİNAL başlangıcı) noktasında
+  /// böler; eski seri kısalır, yeni seri (yeni uid) eklenir ve döndürülür.
+  /// Hatırlatıcılar etkinliğin parçası olduğundan iki tarafa da kopyalanır.
+  /// İlk örnekten bölünemez (ArgumentError).
+  Event seriyiBol(String eventUid, DateTime split) {
+    final e = _etkinlik(eventUid);
+    final r = seriBol(e, split, yeniUid: '${yeniUuid()}@takvim.local', simdi: simdi);
+    events[e.uid] = r.eski;
+    events[r.yeni.uid] = r.yeni;
+    _mezarKaldir('event', r.yeni.uid);
+    return r.yeni;
+  }
+
+  /// "Bu ve sonrakileri sil": seriyi `split`te keser, sonrasını yazmaz.
+  void seriyiKes(String eventUid, DateTime split) {
+    final e = _etkinlik(eventUid);
+    events[e.uid] = seriBol(e, split, yeniUid: '', simdi: simdi).eski;
+  }
+
   void deleteEvent(String uid) {
     _etkinlik(uid);
     silEtkinlik(uid, simdi);
@@ -314,6 +334,14 @@ class Veri {
     final now = simdi;
     silGorev(uid, now);
     if (t.eventUid != null && events.containsKey(t.eventUid)) silEtkinlik(t.eventUid!, now);
+  }
+
+  /// Silinen görevi (ve varsa bloğunu) geri koyar; plan/tamamlanma korunur.
+  /// Mezar taşları kalkar, updated_at şimdi olur (diğer cihazdaki silme kazanmasın).
+  void geriYukleGorev(Task t, {Event? blok}) {
+    if (blok != null) addEvent(blok);
+    tasks[t.uid] = t.kopya(updatedAt: simdi);
+    _mezarKaldir('task', t.uid);
   }
 
   // --------------------------------------------------------------- sorgular

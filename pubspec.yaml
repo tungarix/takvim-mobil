@@ -2,7 +2,7 @@ name: takvim
 description: "Takvim: cevrimdisi takvim ve gorev uygulamasi (Android)"
 publish_to: 'none'
 
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.4
@@ -11,12 +11,31 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Türkçe tarih/saat seçici ve Material bileşen metinleri (Tamam/İptal, ay-gün
+  # adları). Flutter SDK'nın parçası; intl'i dolaylı getirir. Bu olmadan
+  # showDatePicker/showTimePicker İngilizce açılır.
+  flutter_localizations:
+    sdk: flutter
+
   # Saat dilimi veritabanı (IANA). DST'de duvar saatini korumak için tzid'e
   # göre yerel saat hesabı şart; Dart çekirdeğinde saat dilimi yok.
   timezone: ^0.11.2
   # RRULE açıcısı (dateutil karşılığı). Sonuçların masaüstüyle aynı olduğu
   # test/uyum_test.dart ile doğrulanır; ayrılırsa kendi açıcıya geçilir.
   rrule: ^0.2.18
+
+  # Uygulamaya özel veri klasörü (takvim.json) ve senkron dosyası için geçici
+  # klasör; dart:io tek başına Android'de bu yolları vermez.
+  path_provider: ^2.1.6
+  # "Senkron dosyası gönder": .takvimsync dosyasını sistem Paylaş menüsüyle
+  # (WhatsApp, Drive, e-posta...) masaüstüne iletir; ağ erişimi gerektirmez.
+  share_plus: ^13.3.1
+  # "Senkron dosyası aç": sistem dosya seçicisiyle .takvimsync seçtirir.
+  # Uygulama Paylaş/Birlikte aç ile gelen dosyayı ise kendi MainActivity'si alır.
+  file_picker: ^13.3.2
+  # Hatırlatıcılar: uygulama kapalıyken de çalan yerel (çevrimdışı) bildirimler.
+  # Cihaz yeniden başlayınca plugin'in boot receiver'ı alarmları yeniden kurar.
+  flutter_local_notifications: ^22.3.3
 
 dev_dependencies:
   flutter_test:

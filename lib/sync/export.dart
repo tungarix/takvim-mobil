@@ -4,10 +4,11 @@ import 'dart:convert';
 
 import '../core/veri.dart';
 import '../core/zaman.dart';
+import '../surum.dart';
 
 const syncFormat = 'takvim-sync';
 const syncSurum = 1;
-const uygulamaSurumu = 'mobile 0.1.0'; // pubspec.yaml sürümüyle elle eş tutulur
+const uygulamaSurumu = 'mobile $surum';
 
 class CihazBilgisi {
   const CihazBilgisi({required this.id, required this.name, this.app = uygulamaSurumu});
