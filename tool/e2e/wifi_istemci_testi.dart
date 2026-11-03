@@ -6,7 +6,9 @@
 //
 // Sertifika CALISMA ANINDA `openssl` ile isletim sisteminin gecici klasorunde uretilir (1 gun gecerli) ve test
 // bitince klasor silinir; depoya anahtar/sertifika KONMAZ. openssl yoksa TLS denetimleri acik mesajla ATLANIR ve
-// komut 0 yerine 2 koduyla cikar (0 = hepsi kosup gecti, 1 = hata, 2 = atlandi). CI'da (ubuntu) openssl vardir;
+// komut 0 yerine 2 koduyla cikar (0 = TLS denetimleri kosup gecti, 1 = hata, 2 = TLS hic kosmadi).
+// Yalniz TLS 1.1 sunucusu denetimi bu openssl'de kurulamazsa o denetim ATLANDI yazar, kod yine 0 olur.
+// `--ayrinti` gecen denetimleri de listeler. CI'da (ubuntu) openssl vardir;
 // Windows'ta PATH'te yoksa Git'in openssl'i denenir.
 import 'dart:async';
 import 'dart:convert';
@@ -17,10 +19,12 @@ import 'package:takvim/sync/wifi_baglanti.dart';
 import 'package:takvim/sync/wifi_istemci.dart';
 
 int hatalar = 0, toplam = 0, atlanan = 0;
+bool ayrinti = false; // --ayrinti: gecen denetimleri de yazar
 const token = 'cafe0123456789abcdef0123456789ab';
 
 void kontrol(String ad, bool kosul, [Object? detay]) {
   toplam++;
+  if (kosul && ayrinti) stdout.writeln('GECTI  $ad');
   if (!kosul) {
     hatalar++;
     stdout.writeln('KALDI  $ad${detay == null ? '' : '  -> $detay'}');
@@ -301,10 +305,10 @@ Future<void> tlsli(SecurityContext baglam, String pin) async {
   });
   kontrol('POST, GET süresinden uzun beklenir', await tur(() => istemci(s.port, pin, get: const Duration(milliseconds: 300), post: const Duration(seconds: 3)).durumGonder('{}')) == null);
   kontrol('GET kısa süreyle dolar', await tur(istemci(s.port, pin, get: const Duration(milliseconds: 300), post: const Duration(seconds: 3)).durumAl) == 'sureDoldu');
+  final portu = s.port; // kapatmadan ÖNCE: kapalı sunucuda port okunamaz
   await s.kapat();
 
   // 10) Sunucu kapanmışsa
-  final portu = s.port;
   kontrol('sunucu kapalı -> ulasilamadi', await tur(istemci(portu, pin).hello) == 'ulasilamadi');
 }
 
@@ -370,10 +374,12 @@ Future<void> eskiTls(String openssl, String sert, String anahtar, String pin) as
   }
 }
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  ayrinti = args.contains('--ayrinti');
   await baglamsiz();
 
   final openssl = await opensslBul();
+  var tlsKostu = false;
   if (openssl == null) {
     atlanan++;
     stdout.writeln('ATLANDI  TLS denetimleri: openssl bulunamadı (PATH ya da Git usr bin).');
@@ -400,6 +406,7 @@ Future<void> main() async {
           ..useCertificateChain(sert)
           ..usePrivateKey(anahtar);
         await tlsli(baglam, pin);
+        tlsKostu = true;
         await eskiTls(openssl, sert, anahtar, pin);
       }
     } finally {
@@ -412,7 +419,7 @@ Future<void> main() async {
   }
 
   stdout.writeln('$toplam denetim, $hatalar hata${atlanan > 0 ? ', $atlanan grup ATLANDI' : ''}');
-  exit(hatalar > 0 ? 1 : atlanan > 0 ? 2 : 0);
+  exit(hatalar > 0 ? 1 : !tlsKostu ? 2 : 0); // yalniz TLS 1.1 denetimi atlandiysa 0 (CI kirmizi olmasin)
 }
 
 String base64UrlDolgusuz(List<int> b) => base64Url.encode(b).replaceAll('=', '');
