@@ -106,7 +106,7 @@ Future<void> wifiBaglantiIsle(BuildContext context, TakvimKontrol k, String gird
     if (onay != true || !context.mounted) return;
     final oturum = k.wifiOturumu(b);
     try {
-      await _oturumuYurut(context, k, oturum);
+      await _oturumuYurut(context, k, oturum, b);
     } finally {
       oturum.kapat();
     }
@@ -115,7 +115,7 @@ Future<void> wifiBaglantiIsle(BuildContext context, TakvimKontrol k, String gird
   }
 }
 
-Future<void> _oturumuYurut(BuildContext context, TakvimKontrol k, WifiOturum oturum) async {
+Future<void> _oturumuYurut(BuildContext context, TakvimKontrol k, WifiOturum oturum, WifiBaglanti b) async {
   // 1) Bilgisayarın durumunu al (henüz hiçbir veri gönderilmedi).
   final String metin;
   final kapat1 = _ilerlemeAc(context, M.wifiBaglaniyor, oturum.kapat);
@@ -140,7 +140,7 @@ Future<void> _oturumuYurut(BuildContext context, TakvimKontrol k, WifiOturum otu
   }
   if (!context.mounted) return;
   final devam = await onizlemeSor(context, onizleme,
-      baslik: M.wifiOnizlemeBaslik, onay: M.wifiBirlestirGonder, not: M.wifiOnizlemeNot);
+      baslik: M.wifiOnizlemeBaslik, onay: M.wifiBirlestirGonder, not: M.wifiOnizlemeNot(b.ad, b.adres));
   if (!devam || !context.mounted) return;
 
   // 3) Telefona uygula (güncel veriyle yeniden birleştirir; bildirimler yeniden kurulur, son senkron yazılır).
@@ -182,9 +182,16 @@ Future<void> _hataGoster(BuildContext context, Object e, {required String ek, St
   );
 }
 
-/// Dönen ilerleme penceresi; kapatma işlevini verir. "İptal" oturumu keser (bekleyen istek hata ile biter).
+/// İlerleme penceresi; kapatma işlevini verir. Pencere KENDİ rotasıyla kapatılır (en üstteki rotayı pop etmek,
+/// araya başka pencere girerse yanlış rotayı kapatırdı). "İptal" oturumu keser VE pencereyi kapatır.
 VoidCallback _ilerlemeAc(BuildContext context, String metin, VoidCallback iptal) {
-  unawaited(showDialog<void>(
+  final gezgin = Navigator.of(context);
+  late final DialogRoute<void> rota;
+  void kapat() {
+    if (rota.isActive) gezgin.removeRoute(rota);
+  }
+
+  rota = DialogRoute<void>(
     context: context,
     barrierDismissible: false,
     builder: (c) => PopScope(
@@ -195,14 +202,18 @@ VoidCallback _ilerlemeAc(BuildContext context, String metin, VoidCallback iptal)
           const SizedBox(width: 20),
           Expanded(child: Text(metin)),
         ]),
-        actions: [TextButton(onPressed: iptal, child: const Text(M.iptal))],
+        actions: [
+          TextButton(
+            onPressed: () {
+              iptal();
+              kapat();
+            },
+            child: const Text(M.iptal),
+          ),
+        ],
       ),
     ),
-  ));
-  var kapali = false;
-  return () {
-    if (kapali) return;
-    kapali = true;
-    if (context.mounted) Navigator.of(context).pop();
-  };
+  );
+  unawaited(gezgin.push(rota));
+  return kapat;
 }

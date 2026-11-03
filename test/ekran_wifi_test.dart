@@ -90,6 +90,7 @@ void main() {
     expect(h.oturum.cagrilar, ['hello', 'al']);
     expect(find.text('Bilgisayardan gelen değişiklikler'), findsOneWidget);
     expect(find.textContaining('mevcut veriyle birleşecek'), findsOneWidget);
+    expect(find.textContaining('Karşı cihaz: «Arda PC» (192.168.1.20:51734)'), findsOneWidget); // 2. onayda da kimlik
     expect(h.s.k.veri.events, isEmpty); // önizleme veriyi değiştirmez
     expect(h.oturum.gonderilen, isEmpty); // ikinci onaydan önce hiçbir şey gönderilmez
 

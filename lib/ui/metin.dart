@@ -234,17 +234,20 @@ class M {
           'Bağlantıdaki adres yerel bir ağ adresi değil, bu yüzden bağlanılmadı. '
               'Gerçek eşleştirme bağlantıları her zaman aynı Wi-Fi ağındaki bir adresi gösterir; bağlantıyı başka biri gönderdiyse güvenme.',
       };
+  /// Görünmez karakterden oluşan ad ayrıştırıcıda boşa iner; burada "Bilinmeyen cihaz" gösterilir.
+  static String wifiCihaz(String ad, String adres) => '${ad.isEmpty ? 'Bilinmeyen cihaz' : '«$ad»'} ($adres)';
   static const wifiOnayBaslik = 'Bu bilgisayarla eşleşilsin mi?';
   static String wifiOnayMetni(String ad, String adres) =>
-      '${ad.isEmpty ? 'Bilinmeyen cihaz' : '«$ad»'} ($adres) ile eşleşilecek.\n\n'
+      '${wifiCihaz(ad, adres)} ile eşleşilecek.\n\n'
       'Bunu, bilgisayarında senin açtığın eşleştirme ekranından aldıysan devam et. '
       'Bir mesajla ya da başkasından geldiyse devam etme.';
   static const wifiBaglan = 'Bağlan';
   static const wifiBaglaniyor = 'Bilgisayara bağlanılıyor…';
   static const wifiOnayBekleniyor = 'Bilgisayarın onayı bekleniyor… Bilgisayardaki onay penceresine bak (en çok 1,5 dakika).';
   static const wifiOnizlemeBaslik = 'Bilgisayardan gelen değişiklikler';
-  static const wifiOnizlemeNot =
-      'Onaylarsan bu değişiklikler telefonuna işlenir, ardından telefonun tam durumu bilgisayara gönderilir '
+  static String wifiOnizlemeNot(String ad, String adres) =>
+      'Karşı cihaz: ${wifiCihaz(ad, adres)}.\n'
+      'Onaylarsan bu değişiklikler telefonuna işlenir, ardından telefonun tam durumu bu cihaza gönderilir '
       '(bilgisayar da ayrıca onay ister). Vazgeçersen hiçbir veri gönderilmez.';
   static const wifiBirlestirGonder = 'Birleştir ve gönder';
   static const wifiDosyaGecersiz = 'Bilgisayardan gelen veri okunamadı';

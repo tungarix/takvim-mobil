@@ -31,6 +31,11 @@ Future<void> senkronAcAkisi(BuildContext context, TakvimKontrol k) async {
 
 /// Dışarıdan (Paylaş/Birlikte aç) gelen dosya: içerik metin ya da okuma hatası.
 Future<void> disaridanGelen(TakvimKontrol k, {String? metin, String? hata}) async {
+  // Wi-Fi eşleştirme sürerken ilerleme/onay pencereleri açık; üstüne ikinci bir akış binmesin.
+  if (k.wifiMesgul) {
+    k.mesaj(M.wifiMesgul);
+    return;
+  }
   final ctx = k.navigatorAnahtari.currentContext;
   if (ctx == null || !ctx.mounted) return;
   if (metin == null) {

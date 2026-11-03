@@ -1,4 +1,5 @@
 // Ekran testleri için sahte platform servisleri ve ortak kurulum.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -80,8 +81,11 @@ class SahteKopru implements Kopru {
 
 /// Wi-Fi oturumu sahtesi: ağa çıkmaz; çağrıları kaydeder, hatayı/yanıtı teste göre verir.
 class SahteWifi implements WifiOturum {
-  SahteWifi({this.durum = '', this.helloHatasi, this.durumHatasi, this.gonderHatasi, this.rapor = const WifiRapor(added: 2, updated: 1)});
+  SahteWifi({this.durum = '', this.bekle, this.helloHatasi, this.durumHatasi, this.gonderHatasi, this.rapor = const WifiRapor(added: 2, updated: 1)});
   final String durum;
+
+  /// Verilirse durumAl bu tamamlanana dek bekler (ilerleme penceresi açık kalır); kapat() iptal hatasıyla bitirir.
+  final Completer<String>? bekle;
   final WifiHatasi? helloHatasi, durumHatasi, gonderHatasi;
   final WifiRapor rapor;
   final cagrilar = <String>[];
@@ -99,6 +103,7 @@ class SahteWifi implements WifiOturum {
   Future<String> durumAl() async {
     cagrilar.add('al');
     if (durumHatasi != null) throw durumHatasi!;
+    if (bekle != null) return bekle!.future;
     return durum;
   }
 
@@ -111,7 +116,10 @@ class SahteWifi implements WifiOturum {
   }
 
   @override
-  void kapat() => kapatildi = true;
+  void kapat() {
+    kapatildi = true;
+    if (bekle != null && !bekle!.isCompleted) bekle!.completeError(const WifiHatasi(WifiHataTuru.iptal));
+  }
 }
 
 typedef Kurulum = ({TakvimKontrol k, SahteBildirim bildirim, SahteDosyalar dosyalar, Directory dizin});
