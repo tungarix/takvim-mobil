@@ -2,6 +2,10 @@
 // (ve gün/ay adı dizileri) çevrilir; ekranlar metin yazmaz, buradan okur.
 //
 // Kural: kullanıcı verisi (etkinlik/takvim adı) buraya girmez; yalnız arayüz metni.
+import '../sync/import.dart';
+import '../sync/wifi_baglanti.dart';
+import '../sync/wifi_istemci.dart';
+
 class M {
   const M._();
 
@@ -183,8 +187,8 @@ class M {
   static const senkronAc = 'Senkron dosyası aç';
   static const senkronAcAciklama = 'Masaüstünden gelen .takvimsync dosyasını seçin';
   static const senkronYardim =
-      'Dosya internet olmadan, WhatsApp/Drive/e-posta ile ya da kabloyla taşınır. İki yönlü çalışır: '
-      'masaüstünden gelen dosyayı açın, sonra buradan da dosya gönderin.';
+      'Dosya WhatsApp/Drive/e-posta ile ya da kabloyla taşınır; Wi-Fi ile eşleştirme ise aynı ağdaki '
+      'bilgisayarla doğrudan konuşur. İki yönlü çalışır: masaüstünden gelen dosyayı açın, sonra buradan da dosya gönderin.';
   static String sonSenkron(String? zaman) => zaman == null ? 'Henüz senkron yapılmadı' : 'Son senkron: $zaman';
   static const onizlemeBaslik = 'Senkron önizleme';
   static const onizlemeUygula = 'İçe aktar';
@@ -204,11 +208,88 @@ class M {
   static String gonderHatasi(Object e) => 'Dosya gönderilemedi: $e';
   static const dosyaAdiOnek = 'takvim';
 
+  // --- Wi-Fi eşleştirme
+  static const wifiEslestir = 'Wi-Fi ile eşleştir';
+  static const wifiEslestirAciklama = 'Aynı Wi-Fi ağındaki bilgisayarla doğrudan senkron';
+  static const wifiSayfaBaslik = 'Wi-Fi ile eşleştir';
+  static const wifiAdimlar =
+      '1. Telefon ve bilgisayar aynı Wi-Fi ağında olsun (misafir ağlar cihazları birbirinden ayırabilir).\n'
+      '2. Bilgisayarda Takvim > Ayarlar > Telefonla senkron > "Wi-Fi ile eşleştir"e bas; ekranda QR kod çıkar.\n'
+      '3. Telefonun kamera uygulamasıyla QR kodu okut ve açılan bağlantıyı Takvim ile aç. '
+      'Açılamazsa bilgisayardaki bağlantı metnini kopyalayıp aşağıya yapıştır.\n'
+      '4. Önce bağlantıyı onaylarsın, sonra neyin birleşeceğini görüp bir kez daha onaylarsın. Onaylamazsan hiçbir veri gönderilmez.';
+  static const wifiBaglantiAlan = 'Bağlantıyı yapıştır';
+  static const wifiBaglantiIpucu = 'https://aktenak.tech/s#...';
+  static const wifiDevam = 'Devam';
+  static const wifiYedekYol = 'Wi-Fi çalışmazsa "Senkron dosyası gönder / aç" ile dosya aktararak da senkron yapabilirsin.';
+  static const wifiMesgul = 'Bir Wi-Fi eşleştirme işlemi zaten sürüyor.';
+  static const wifiBaglantiGecersizBaslik = 'Bağlantı geçersiz';
+  static String wifiBaglantiHata(WifiBaglantiHataTuru t) => switch (t) {
+        WifiBaglantiHataTuru.bicimsiz =>
+          'Bu, bilgisayarın eşleştirme ekranındaki bir Takvim bağlantısı değil ya da bozuk. Hiçbir yere bağlanılmadı. '
+              'Bağlantıyı bilgisayardaki eşleştirme ekranından kopyala.',
+        WifiBaglantiHataTuru.surumYeni =>
+          "Bu bağlantı Takvim'in daha yeni bir sürümüyle oluşturulmuş. Hem telefondaki hem bilgisayardaki Takvim'i güncelle.",
+        WifiBaglantiHataTuru.ozelOlmayanAdres =>
+          'Bağlantıdaki adres yerel bir ağ adresi değil, bu yüzden bağlanılmadı. '
+              'Gerçek eşleştirme bağlantıları her zaman aynı Wi-Fi ağındaki bir adresi gösterir; bağlantıyı başka biri gönderdiyse güvenme.',
+      };
+  static const wifiOnayBaslik = 'Bu bilgisayarla eşleşilsin mi?';
+  static String wifiOnayMetni(String ad, String adres) =>
+      '${ad.isEmpty ? 'Bilinmeyen cihaz' : '«$ad»'} ($adres) ile eşleşilecek.\n\n'
+      'Bunu, bilgisayarında senin açtığın eşleştirme ekranından aldıysan devam et. '
+      'Bir mesajla ya da başkasından geldiyse devam etme.';
+  static const wifiBaglan = 'Bağlan';
+  static const wifiBaglaniyor = 'Bilgisayara bağlanılıyor…';
+  static const wifiOnayBekleniyor = 'Bilgisayarın onayı bekleniyor… Bilgisayardaki onay penceresine bak (en çok 1,5 dakika).';
+  static const wifiOnizlemeBaslik = 'Bilgisayardan gelen değişiklikler';
+  static const wifiOnizlemeNot =
+      'Onaylarsan bu değişiklikler telefonuna işlenir, ardından telefonun tam durumu bilgisayara gönderilir '
+      '(bilgisayar da ayrıca onay ister). Vazgeçersen hiçbir veri gönderilmez.';
+  static const wifiBirlestirGonder = 'Birleştir ve gönder';
+  static const wifiDosyaGecersiz = 'Bilgisayardan gelen veri okunamadı';
+  static const wifiSonucBaslik = 'Wi-Fi senkronu tamamlandı';
+  static String wifiSonucOzet(ImportRaporu telefon, WifiRapor bilgisayar) =>
+      'Telefona\n${sonucOzet(telefon.added, telefon.updated, telefon.deleted, telefon.skipped)}\n\n'
+      'Bilgisayara\n${sonucOzet(bilgisayar.added, bilgisayar.updated, bilgisayar.deleted, bilgisayar.skipped)}';
+  static const wifiHataBaslik = 'Wi-Fi eşleştirme tamamlanamadı';
+  static const wifiGuvenlikBaslik = 'Güvenlik uyarısı';
+  static const wifiGonderilemediEk =
+      '\n\nTelefondaki birleştirme yapıldı; bilgisayara veri eklenmedi. İstersen yeniden eşleştirebilir ya da dosya aktarabilirsin.';
+  static const wifiGonderIptalEk =
+      'Telefondaki birleştirme yapıldı; bağlantı kesildi. Bilgisayarda onay penceresi açıldıysa "Hayır" de.';
+  static String wifiHata(WifiHataTuru t, [String ayrinti = '']) {
+    final ek = ayrinti.isEmpty ? '' : ' ($ayrinti)';
+    return switch (t) {
+      WifiHataTuru.ozelOlmayanAdres => 'Adres yerel bir ağ adresi değil; bağlanılmadı.',
+      WifiHataTuru.ulasilamadi =>
+        'Bilgisayara ulaşılamadı. Telefon ve bilgisayar aynı Wi-Fi ağında mı? Misafir ağlar cihazları birbirinden ayırabilir; '
+            'o durumda dosya aktararak senkron yap. Bilgisayardaki eşleştirme ekranı da açık olmalı.$ek',
+      WifiHataTuru.sureDoldu =>
+        'Bilgisayar zamanında yanıt vermedi (süre doldu). Eşleştirme ekranı kapanmış olabilir; bilgisayarda yeniden başlat.',
+      WifiHataTuru.tlsKurulamadi => 'Güvenli bağlantı kurulamadı. Bu adres bir Takvim eşleştirme oturumu olmayabilir.',
+      WifiHataTuru.parmakIzi =>
+        'Bağlandığın cihazın kimliği QR koddakiyle uyuşmuyor, bağlantı kesildi ve hiçbir veri gönderilmedi. '
+            'Bağlantıyı yalnız kendi bilgisayarındaki eşleştirme ekranından al. Aldıysan ve bu uyarı sürüyorsa ağdaki başka bir cihaz araya girmeye çalışıyor olabilir.',
+      WifiHataTuru.yetkisiz =>
+        'Bilgisayar bağlantı kodunu kabul etmedi. Eşleştirme ekranı yenilenmiş ya da kapanmış olabilir; yeni QR kodla yeniden dene.',
+      WifiHataTuru.reddedildi => 'Bilgisayar gönderilen veriyi reddetti (onay penceresinde "Hayır" denmiş olabilir).',
+      WifiHataTuru.masaustuSuresiDoldu =>
+        'Bilgisayarda onay süresi doldu. Yeniden eşleştirip bilgisayardaki onay penceresine zamanında bak.',
+      WifiHataTuru.surum => 'Telefon ve bilgisayardaki Takvim farklı sürüm bekliyor. İkisini de güncelle.$ek',
+      WifiHataTuru.gecersizDosya => 'Bilgisayar gönderilen veriyi geçersiz buldu$ek.',
+      WifiHataTuru.cokBuyuk => 'Veri çok büyük (en çok 16 MB).$ek',
+      WifiHataTuru.beklenmeyen => 'Bilgisayardan beklenmeyen bir yanıt geldi$ek.',
+      WifiHataTuru.iptal => 'İptal edildi.',
+    };
+  }
+
   // --- hakkında
   static const hakkindaBolumu = 'Hakkında';
   static String surum(String s) => 'Sürüm $s';
   static const verilerYalnizTelefonda =
-      'Veriler yalnız bu telefonda tutulur. Uygulama internete bağlanmaz, hesap gerektirmez.';
+      'Veriler yalnız bu telefonda tutulur, hesap gerekmez. Uygulama yalnız sen "Wi-Fi ile eşleştir"i kullanınca '
+      'aynı ağdaki bilgisayarına bağlanır; başka hiçbir yere bağlanmaz.';
   static const lisans = 'Lisans: MIT';
   static const lisansMetni = 'MIT License\n\nCopyright (c) 2026 Arda\n\n'
       'Permission is hereby granted, free of charge, to any person obtaining a copy of this software and '

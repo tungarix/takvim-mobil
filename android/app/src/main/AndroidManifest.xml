@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- INTERNET YOK: uygulama tamamen çevrimdışıdır (debug manifest'inki yalnız geliştirme içindir). -->
+    <!-- Wi-Fi eşleştirme (Ayarlar > Wi-Fi ile eşleştir): aynı ağdaki masaüstüne HTTPS bağlantısı. Yalnız bu özellik
+         kullanılırken ağ isteği yapılır; başka hiçbir yere bağlanılmaz. Düz HTTP kapalı (usesCleartextTraffic=false). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+: hatırlatıcı bildirimi göstermek için çalışma zamanı izni. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Cihaz yeniden başlayınca alarmlar yeniden kurulsun. -->
@@ -53,6 +55,14 @@
                 <data android:pathPattern=".*\\.takvimsync"/>
                 <data android:pathPattern=".*\\..*\\.takvimsync"/>
                 <data android:pathPattern=".*\\..*\\..*\\.takvimsync"/>
+            </intent-filter>
+            <!-- Wi-Fi eşleştirme QR bağlantısı (https://aktenak.tech/s#...): kamera uygulaması açar. BROWSABLE yalnız burada;
+                 MainActivity tam host/yolu yeniden denetler ve bağlantı yalnız onay ekranını açar, kendiliğinden bağlanmaz. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="aktenak.tech" android:pathPrefix="/s"/>
             </intent-filter>
             <!-- Paylaş menüsünden: uzantı süzülemez, bu yüzden yalnız belirsiz-ikili ve kendi mime türümüz. -->
             <intent-filter>

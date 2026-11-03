@@ -18,6 +18,8 @@ import '../store/ayarlar.dart';
 import '../store/takvim_store.dart';
 import '../sync/export.dart';
 import '../sync/import.dart';
+import '../sync/wifi_baglanti.dart';
+import '../sync/wifi_istemci.dart';
 import '../ui/bicim.dart';
 import '../ui/metin.dart';
 
@@ -31,6 +33,7 @@ class TakvimKontrol extends ChangeNotifier {
     required this.bildirim,
     required this.dosyalar,
     DateTime Function()? saat,
+    this.wifiOturumu = WifiIstemci.yeni,
   })  : saat = saat ?? DateTime.now,
         gorunum = Gorunum.values.firstWhere((g) => g.name == ayarlar.gorunum, orElse: () => Gorunum.gun) {
     odakGun = bugun;
@@ -42,6 +45,12 @@ class TakvimKontrol extends ChangeNotifier {
   final BildirimServisi bildirim;
   final DosyaServisi dosyalar;
   final DateTime Function() saat;
+
+  /// Wi-Fi eşleştirme oturumu üretici; testler sahtesini verir.
+  final WifiOturum Function(WifiBaglanti) wifiOturumu;
+
+  /// Bir Wi-Fi eşleştirme akışı sürerken ikinci bağlantı (ör. yeni App Link) başlatılmaz.
+  bool wifiMesgul = false;
 
   final mesajci = GlobalKey<ScaffoldMessengerState>();
   final navigatorAnahtari = GlobalKey<NavigatorState>();
@@ -168,6 +177,9 @@ class TakvimKontrol extends ChangeNotifier {
     String i2(int n) => n.toString().padLeft(2, '0');
     return '${M.dosyaAdiOnek}-${w.year}${i2(w.month)}${i2(w.day)}-${i2(w.hour)}${i2(w.minute)}.takvimsync';
   }
+
+  /// Telefonun tam durumu (`.takvimsync` metni); Wi-Fi'da birleşmeden sonra masaüstüne gider.
+  String senkronMetni() => disaAktarMetin(veri, store.cihaz);
 
   Future<void> senkronGonder() => dosyalar.paylas(disaAktarMetin(veri, store.cihaz), senkronDosyaAdi());
 

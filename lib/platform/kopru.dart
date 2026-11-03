@@ -2,7 +2,8 @@
 //  - saatDilimi: cihazın IANA saat dilimi (DateTime.timeZoneName güvenilmez),
 //  - dizinler: uygulamaya özel veri/geçici klasör (path_provider yerine: o paket yerel JNI/NDK derlemesi ister),
 //  - bekleyenDosya: uygulama "Birlikte aç / Paylaş" ile .takvimsync alınarak açıldıysa içeriği,
-//  - dosyaGeldi: uygulama açıkken yeni dosya gelirse Kotlin'in Dart'a göndermesi.
+//  - dosyaGeldi: uygulama açıkken yeni dosya gelirse Kotlin'in Dart'a göndermesi,
+//  - bekleyenBaglanti / baglantiGeldi: Wi-Fi eşleştirme App Link'i (https://aktenak.tech/s#...), aynı mantık.
 import 'package:flutter/services.dart';
 
 /// Dışarıdan gelen dosya: ya metin ya da anlaşılır hata.
@@ -18,6 +19,8 @@ abstract class Kopru {
   Future<({String veri, String gecici})> dizinler();
   Future<GelenDosya?> bekleyenDosya();
   void dosyaDinle(void Function(GelenDosya) f);
+  Future<String?> bekleyenBaglanti();
+  void baglantiDinle(void Function(String) f);
 }
 
 class AndroidKopru implements Kopru {
@@ -36,14 +39,32 @@ class AndroidKopru implements Kopru {
   @override
   Future<GelenDosya?> bekleyenDosya() async => _coz(await _kanal.invokeMethod<Object?>('bekleyenDosya'));
 
+  void Function(GelenDosya)? _dosyaF;
+  void Function(String)? _baglantiF;
+
+  // Tek işleyici iki olayı da dinler (setMethodCallHandler yenisi eskisini siler).
+  void _isleyiciKur() => _kanal.setMethodCallHandler((c) async {
+        if (c.method == 'dosyaGeldi') {
+          final g = _coz(c.arguments);
+          if (g != null) _dosyaF?.call(g);
+        } else if (c.method == 'baglantiGeldi' && c.arguments is String) {
+          _baglantiF?.call(c.arguments as String);
+        }
+      });
+
   @override
   void dosyaDinle(void Function(GelenDosya) f) {
-    _kanal.setMethodCallHandler((c) async {
-      if (c.method == 'dosyaGeldi') {
-        final g = _coz(c.arguments);
-        if (g != null) f(g);
-      }
-    });
+    _dosyaF = f;
+    _isleyiciKur();
+  }
+
+  @override
+  Future<String?> bekleyenBaglanti() => _kanal.invokeMethod<String>('bekleyenBaglanti');
+
+  @override
+  void baglantiDinle(void Function(String) f) {
+    _baglantiF = f;
+    _isleyiciKur();
   }
 
   static GelenDosya? _coz(Object? o) {

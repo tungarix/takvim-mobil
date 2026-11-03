@@ -34,7 +34,7 @@ Future<void> disaridanGelen(TakvimKontrol k, {String? metin, String? hata}) asyn
   final ctx = k.navigatorAnahtari.currentContext;
   if (ctx == null || !ctx.mounted) return;
   if (metin == null) {
-    await _bilgi(ctx, M.dosyaOkunamadi, hata ?? '');
+    await bilgiPenceresi(ctx, M.dosyaOkunamadi, hata ?? '');
     return;
   }
   await senkronIceAktar(ctx, k, metin);
@@ -45,42 +45,52 @@ Future<void> senkronIceAktar(BuildContext context, TakvimKontrol k, String metin
   try {
     onizleme = k.senkronOnizle(metin);
   } catch (e) {
-    await _bilgi(context, M.dosyaOkunamadi, TakvimKontrol.senkronHataMetni(e));
+    await bilgiPenceresi(context, M.dosyaOkunamadi, TakvimKontrol.senkronHataMetni(e));
     return;
   }
   if (!context.mounted) return;
-  final etkinlik = onizleme.event.added + onizleme.event.updated;
-  final gorev = onizleme.task.added + onizleme.task.updated;
-  final onay = await showDialog<bool>(
-    context: context,
-    builder: (c) => AlertDialog(
-      title: const Text(M.onizlemeBaslik),
-      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (onizleme.degisti) Text(M.onizlemeOzet(etkinlik, gorev, onizleme.deleted)) else const Text(M.onizlemeDegisiklikYok),
-        if (onizleme.calendar.added + onizleme.calendar.updated > 0)
-          Padding(padding: const EdgeInsets.only(top: 8), child: Text('${M.takvimler}: ${onizleme.calendar.added + onizleme.calendar.updated}')),
-        const SizedBox(height: 12),
-        Text(M.onizlemeBirlesme, style: Theme.of(c).textTheme.bodySmall),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text(M.iptal)),
-        FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text(M.onizlemeUygula)),
-      ],
-    ),
-  );
-  if (onay != true || !context.mounted) return;
+  final onay = await onizlemeSor(context, onizleme);
+  if (!onay || !context.mounted) return;
   final ImportRaporu rapor;
   try {
     rapor = await k.senkronUygula(metin);
   } catch (e) {
-    if (context.mounted) await _bilgi(context, M.dosyaOkunamadi, TakvimKontrol.senkronHataMetni(e));
+    if (context.mounted) await bilgiPenceresi(context, M.dosyaOkunamadi, TakvimKontrol.senkronHataMetni(e));
     return;
   }
   if (!context.mounted) return;
-  await _bilgi(context, M.sonucBaslik, M.sonucOzet(rapor.added, rapor.updated, rapor.deleted, rapor.skipped));
+  await bilgiPenceresi(context, M.sonucBaslik, M.sonucOzet(rapor.added, rapor.updated, rapor.deleted, rapor.skipped));
 }
 
-Future<void> _bilgi(BuildContext context, String baslik, String govde) => showDialog<void>(
+/// Birleşme önizlemesi + onay penceresi (dosya ve Wi-Fi akışları ortak). Onaylanırsa true.
+Future<bool> onizlemeSor(BuildContext context, ImportRaporu onizleme,
+    {String baslik = M.onizlemeBaslik, String onay = M.onizlemeUygula, String? not}) async {
+  final etkinlik = onizleme.event.added + onizleme.event.updated;
+  final gorev = onizleme.task.added + onizleme.task.updated;
+  final sonuc = await showDialog<bool>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: Text(baslik),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (onizleme.degisti) Text(M.onizlemeOzet(etkinlik, gorev, onizleme.deleted)) else const Text(M.onizlemeDegisiklikYok),
+          if (onizleme.calendar.added + onizleme.calendar.updated > 0)
+            Padding(padding: const EdgeInsets.only(top: 8), child: Text('${M.takvimler}: ${onizleme.calendar.added + onizleme.calendar.updated}')),
+          const SizedBox(height: 12),
+          Text(M.onizlemeBirlesme, style: Theme.of(c).textTheme.bodySmall),
+          if (not != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(not, style: Theme.of(c).textTheme.bodySmall)),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text(M.iptal)),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(onay)),
+      ],
+    ),
+  );
+  return sonuc == true;
+}
+
+Future<void> bilgiPenceresi(BuildContext context, String baslik, String govde) => showDialog<void>(
       context: context,
       builder: (c) => AlertDialog(
         title: Text(baslik),

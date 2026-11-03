@@ -13,6 +13,8 @@ import 'package:takvim/platform/dosya_servisi.dart';
 import 'package:takvim/platform/kopru.dart';
 import 'package:takvim/store/ayarlar.dart';
 import 'package:takvim/store/takvim_store.dart';
+import 'package:takvim/sync/wifi_baglanti.dart';
+import 'package:takvim/sync/wifi_istemci.dart';
 import 'package:takvim/ui/uygulama.dart';
 
 import 'yardimci.dart';
@@ -54,6 +56,14 @@ class SahteDosyalar implements DosyaServisi {
 class SahteKopru implements Kopru {
   GelenDosya? bekleyen;
   void Function(GelenDosya)? dinleyici;
+  String? bekleyenBag;
+  void Function(String)? baglantiDinleyici;
+
+  @override
+  Future<String?> bekleyenBaglanti() async => bekleyenBag;
+
+  @override
+  void baglantiDinle(void Function(String) f) => baglantiDinleyici = f;
 
   @override
   Future<GelenDosya?> bekleyenDosya() async => bekleyen;
@@ -68,11 +78,47 @@ class SahteKopru implements Kopru {
   Future<({String veri, String gecici})> dizinler() async => (veri: '.', gecici: '.');
 }
 
+/// Wi-Fi oturumu sahtesi: ağa çıkmaz; çağrıları kaydeder, hatayı/yanıtı teste göre verir.
+class SahteWifi implements WifiOturum {
+  SahteWifi({this.durum = '', this.helloHatasi, this.durumHatasi, this.gonderHatasi, this.rapor = const WifiRapor(added: 2, updated: 1)});
+  final String durum;
+  final WifiHatasi? helloHatasi, durumHatasi, gonderHatasi;
+  final WifiRapor rapor;
+  final cagrilar = <String>[];
+  final gonderilen = <String>[];
+  var kapatildi = false;
+
+  @override
+  Future<WifiHello> hello() async {
+    cagrilar.add('hello');
+    if (helloHatasi != null) throw helloHatasi!;
+    return const WifiHello(ad: 'PC', uygulama: 'desktop 1.9.0');
+  }
+
+  @override
+  Future<String> durumAl() async {
+    cagrilar.add('al');
+    if (durumHatasi != null) throw durumHatasi!;
+    return durum;
+  }
+
+  @override
+  Future<WifiRapor> durumGonder(String metin) async {
+    cagrilar.add('gonder');
+    gonderilen.add(metin);
+    if (gonderHatasi != null) throw gonderHatasi!;
+    return rapor;
+  }
+
+  @override
+  void kapat() => kapatildi = true;
+}
+
 typedef Kurulum = ({TakvimKontrol k, SahteBildirim bildirim, SahteDosyalar dosyalar, Directory dizin});
 
 /// Gerçek dosya G/Ç'si olan kontrol (TakvimStore atomik yazması test edilsin diye gerçek).
 /// Saat sabit: 2026-11-03 13:00 yerel (10:00Z), Salı.
-Future<Kurulum> kontrolKurGercek() async {
+Future<Kurulum> kontrolKurGercek({WifiOturum Function(WifiBaglanti)? wifi}) async {
   final dizin = await Directory.systemTemp.createTemp('takvim_test');
   _dizinler.add(dizin);
   final saat = Saat('2026-11-03T10:00:00Z');
@@ -87,6 +133,7 @@ Future<Kurulum> kontrolKurGercek() async {
     bildirim: bildirim,
     dosyalar: dosyalar,
     saat: saat.call,
+    wifiOturumu: wifi ?? WifiIstemci.yeni,
   );
   await k.baslat();
   return (k: k, bildirim: bildirim, dosyalar: dosyalar, dizin: dizin);
@@ -107,7 +154,8 @@ Future<void> dizinleriTemizle() async {
   _dizinler.clear();
 }
 
-Future<Kurulum> kontrolKur(WidgetTester t) async => (await t.runAsync(kontrolKurGercek))!;
+Future<Kurulum> kontrolKur(WidgetTester t, {WifiOturum Function(WifiBaglanti)? wifi}) async =>
+    (await t.runAsync(() => kontrolKurGercek(wifi: wifi)))!;
 
 Future<Kurulum> kontrolKurDuz() => kontrolKurGercek();
 

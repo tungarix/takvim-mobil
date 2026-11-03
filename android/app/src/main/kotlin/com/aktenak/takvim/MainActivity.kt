@@ -15,12 +15,15 @@ import java.util.TimeZone
  *  - saatDilimi: cihazın IANA saat dilimi,
  *  - dizinler: uygulamaya özel veri ve geçici klasör yolları (path_provider yerine; o paket yerel JNI/NDK ister),
  *  - bekleyenDosya: "Birlikte aç / Paylaş" ile gelen .takvimsync içeriği (bir kez verilir),
- *  - dosyaGeldi (Kotlin -> Dart): uygulama açıkken yeni dosya gelirse içerik itilir.
+ *  - dosyaGeldi (Kotlin -> Dart): uygulama açıkken yeni dosya gelirse içerik itilir,
+ *  - bekleyenBaglanti / baglantiGeldi: Wi-Fi eşleştirme App Link'i (https://aktenak.tech/s#...); aynı mantık.
+ *    Bağlantı yalnız metin olarak Dart'a verilir; Dart onay ekranını açar, kendiliğinden bağlanılmaz.
  * İçerik burada UTF-8 metne çevrilir; sınırı aşan ya da okunamayan dosya anlaşılır hata olur.
  */
 class MainActivity : FlutterActivity() {
     private var kanal: MethodChannel? = null
     private var bekleyen: Map<String, String>? = null
+    private var bekleyenBaglanti: String? = null
 
     // Dart ilk kez "bekleyenDosya" sorduktan sonra dinleyici hazırdır; öncesinde itme kaybolurdu.
     private var dartHazir = false
@@ -50,10 +53,24 @@ class MainActivity : FlutterActivity() {
                         bekleyen = null
                         sonuc.success(b)
                     }
+                    "bekleyenBaglanti" -> {
+                        dartHazir = true
+                        val b = bekleyenBaglanti
+                        bekleyenBaglanti = null
+                        sonuc.success(b)
+                    }
                     else -> sonuc.notImplemented()
                 }
             }
         }
+    }
+
+    /** Yalnız tam `https://aktenak.tech/s` kabul edilir (manifest pathPrefix "/s" ile "/shop" da eşleşirdi). */
+    private fun baglantiyiVer(uri: Uri) {
+        setIntent(Intent())
+        val s = uri.toString()
+        if (uri.scheme != "https" || !"aktenak.tech".equals(uri.host, ignoreCase = true) || uri.path != "/s" || uri.port != -1 || s.length > 2048) return
+        if (dartHazir && kanal != null) kanal?.invokeMethod("baglantiGeldi", s) else bekleyenBaglanti = s
     }
 
     private fun dosyayiOku(i: Intent?) {
@@ -66,6 +83,10 @@ class MainActivity : FlutterActivity() {
             else -> null
         }
         if (uri == null) return
+        if (uri.scheme == "https") {
+            baglantiyiVer(uri)
+            return
+        }
         // Yalnız content:// kabul edilir. Manifest filtresi tek başına yetmez: açık (explicit) intent
         // filtreyi atlar ve file:// ile uygulamanın kendi özel dosyalarını (takvim.json) okutabilirdi.
         if (uri.scheme != "content") {

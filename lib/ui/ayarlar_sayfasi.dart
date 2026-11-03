@@ -8,6 +8,7 @@ import '../surum.dart';
 import 'bicim.dart';
 import 'metin.dart';
 import 'senkron_akisi.dart';
+import 'wifi_akisi.dart';
 
 class AyarlarSayfasi extends StatelessWidget {
   const AyarlarSayfasi({super.key, required this.kontrol});
@@ -48,6 +49,12 @@ class AyarlarSayfasi extends StatelessWidget {
               title: const Text(M.senkronAc),
               subtitle: const Text(M.senkronAcAciklama),
               onTap: () => senkronAcAkisi(context, kontrol),
+            ),
+            ListTile(
+              leading: const Icon(Icons.wifi),
+              title: const Text(M.wifiEslestir),
+              subtitle: const Text(M.wifiEslestirAciklama),
+              onTap: () => wifiEslestirSayfasiAc(context, kontrol),
             ),
             ListTile(
               leading: const Icon(Icons.sync),

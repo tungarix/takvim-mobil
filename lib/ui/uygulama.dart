@@ -11,6 +11,7 @@ import 'gorevler_sayfasi.dart';
 import 'metin.dart';
 import 'senkron_akisi.dart';
 import 'takvim_sayfasi.dart';
+import 'wifi_akisi.dart';
 
 ThemeData _tema(Brightness b) => ThemeData(
       useMaterial3: true,
@@ -40,10 +41,13 @@ class _TakvimUygulamasiDurumu extends State<TakvimUygulamasi> with WidgetsBindin
     final kopru = widget.kopru;
     if (kopru != null) {
       kopru.dosyaDinle(_gelen);
+      kopru.baglantiDinle((b) => wifiBaglantiGeldi(k, b));
       // Uygulama dosyayla açıldıysa ilk karede (gezgin hazırken) önizleme gösterilir.
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final g = await kopru.bekleyenDosya();
         if (g != null) await _gelen(g);
+        final b = await kopru.bekleyenBaglanti();
+        if (b != null) await wifiBaglantiGeldi(k, b);
       });
     }
   }
