@@ -4,11 +4,10 @@
 // HttpClient'ı sahteyle değiştirir ve bu makinede motor çöküyor). Yerel (loopback) bir HttpServer'ı
 // kendi imzalı sertifikayla açar; istemci ona yalnız sertifika parmak iziyle güvenir.
 //
-// Sertifika sabitleri test/fixtures/wifi-test-sertifika.pem ve wifi-test-anahtar.pem (YALNIZ TEST; hiçbir
-// şeye güvenmez). Yoksa TLS denetimleri koşmaz ve betik hata ile biter; üretmek için (bir kez):
-//   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 36500 \
-//     -subj "/CN=takvim-test" -addext "subjectAltName=IP:127.0.0.1" \
-//     -keyout test/fixtures/wifi-test-anahtar.pem -out test/fixtures/wifi-test-sertifika.pem
+// Sertifika CALISMA ANINDA `openssl` ile isletim sisteminin gecici klasorunde uretilir (1 gun gecerli) ve test
+// bitince klasor silinir; depoya anahtar/sertifika KONMAZ. openssl yoksa TLS denetimleri acik mesajla ATLANIR ve
+// komut 0 yerine 2 koduyla cikar (0 = hepsi kosup gecti, 1 = hata, 2 = atlandi). CI'da (ubuntu) openssl vardir;
+// Windows'ta PATH'te yoksa Git'in openssl'i denenir.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -317,27 +316,103 @@ Future<void> buyuk403(HttpRequest r) async {
   await r.response.close();
 }
 
+Future<String?> opensslBul() async {
+  for (final aday in ['openssl', 'C:/Program Files/Git/usr/bin/openssl.exe', '/usr/bin/openssl', '/opt/homebrew/bin/openssl']) {
+    try {
+      if ((await Process.run(aday, ['version'])).exitCode == 0) return aday;
+    } on ProcessException {
+      // sıradaki aday
+    }
+  }
+  return null;
+}
+
+/// TLS 1.0/1.1'e inen bir sunucuya (openssl s_server) bağlanmamalı. Sunucunun gerçekten <1.2 konuştuğu
+/// s_client ile doğrulanamazsa denetim ATLANIR (boş geçmesin diye).
+Future<void> eskiTls(String openssl, String sert, String anahtar, String pin) async {
+  stdout.writeln('-- TLS 1.0/1.1 sunucusu');
+  final ger = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+  final port = ger.port;
+  await ger.close();
+  final env = {'MSYS_NO_PATHCONV': '1'};
+  final sunucu = await Process.start(
+      openssl,
+      ['s_server', '-accept', '$port', '-cert', sert, '-key', anahtar, '-min_protocol', 'TLSv1', '-max_protocol', 'TLSv1.1', '-cipher', 'DEFAULT:@SECLEVEL=0', '-www', '-quiet'],
+      environment: env);
+  sunucu.stdout.drain<void>();
+  sunucu.stderr.drain<void>();
+  try {
+    var hazir = false;
+    for (var i = 0; i < 30 && !hazir; i++) {
+      try {
+        (await Socket.connect(InternetAddress.loopbackIPv4, port)).destroy();
+        hazir = true;
+      } on SocketException {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
+    var dogrulandi = false;
+    if (hazir) {
+      final r = await Process.run(openssl, ['s_client', '-connect', '127.0.0.1:$port', '-tls1_1', '-cipher', 'DEFAULT:@SECLEVEL=0'], stdoutEncoding: latin1, environment: env)
+          .timeout(const Duration(seconds: 10));
+      dogrulandi = '${r.stdout}'.contains('TLSv1.1');
+    }
+    if (!dogrulandi) {
+      atlanan++;
+      stdout.writeln('ATLANDI  TLS 1.1 sunucusu bu openssl ile kurulamadı/doğrulanamadı; denetim koşmadı.');
+      return;
+    }
+    final t = await tur(istemci(port, pin).hello);
+    kontrol('TLS 1.1 sunucusuna bağlanılmaz (tlsKurulamadi)', t == 'tlsKurulamadi', t);
+    kontrol('TLS 1.1 sunucusuna POST de gitmez', await tur(() => istemci(port, pin).durumGonder('{}')) == 'tlsKurulamadi');
+  } finally {
+    sunucu.kill();
+  }
+}
+
 Future<void> main() async {
   await baglamsiz();
 
-  final sert = File.fromUri(Platform.script.resolve('../../test/fixtures/wifi-test-sertifika.pem'));
-  final anahtar = File.fromUri(Platform.script.resolve('../../test/fixtures/wifi-test-anahtar.pem'));
-  if (await sert.exists() && await anahtar.exists()) {
-    final pem = await sert.readAsString();
-    final b64 = pem.split('\n').where((s) => s.isNotEmpty && !s.startsWith('-----')).join();
-    final pin = base64UrlDolgusuz(sha256(base64.decode(b64)));
-    final baglam = SecurityContext(withTrustedRoots: false)
-      ..useCertificateChain(sert.path)
-      ..usePrivateKey(anahtar.path);
-    await tlsli(baglam, pin);
+  final openssl = await opensslBul();
+  if (openssl == null) {
+    atlanan++;
+    stdout.writeln('ATLANDI  TLS denetimleri: openssl bulunamadı (PATH ya da Git usr bin).');
   } else {
-    atlanan = 1;
-    stdout.writeln('ATLANDI  TLS denetimleri: test sertifikası yok (${sert.path}).\n'
-        '         Üretmek için bu dosyanın başındaki openssl komutunu bir kez çalıştırın.');
+    final dizin = await Directory.systemTemp.createTemp('takvim_tls');
+    try {
+      final sert = '${dizin.path}${Platform.pathSeparator}sertifika.crt';
+      final anahtar = '${dizin.path}${Platform.pathSeparator}anahtar.key';
+      final r = await Process.run(
+          openssl,
+          [
+            'req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-days', '1',
+            '-subj', '/CN=takvim-test', '-addext', 'subjectAltName=IP:127.0.0.1', '-keyout', anahtar, '-out', sert,
+          ],
+          environment: {'MSYS_NO_PATHCONV': '1'});
+      if (r.exitCode != 0) {
+        atlanan++;
+        stdout.writeln('ATLANDI  TLS denetimleri: openssl sertifika üretemedi: ${r.stderr}');
+      } else {
+        final metin = await File(sert).readAsString();
+        final b64 = const LineSplitter().convert(metin).where((s) => s.isNotEmpty && !s.startsWith('-----')).join();
+        final pin = base64UrlDolgusuz(sha256(base64.decode(b64)));
+        final baglam = SecurityContext(withTrustedRoots: false)
+          ..useCertificateChain(sert)
+          ..usePrivateKey(anahtar);
+        await tlsli(baglam, pin);
+        await eskiTls(openssl, sert, anahtar, pin);
+      }
+    } finally {
+      try {
+        await dizin.delete(recursive: true); // özel anahtar diskte kalmaz
+      } on FileSystemException {
+        // Windows: bir tutamaç açıksa silinemez; 1 günlük test anahtarı, sistem geçici klasörü temizler
+      }
+    }
   }
 
-  stdout.writeln('$toplam denetim, $hatalar hata${atlanan > 0 ? ', TLS denetimleri ATLANDI' : ''}');
-  exit(hatalar == 0 && atlanan == 0 ? 0 : 1);
+  stdout.writeln('$toplam denetim, $hatalar hata${atlanan > 0 ? ', $atlanan grup ATLANDI' : ''}');
+  exit(hatalar > 0 ? 1 : atlanan > 0 ? 2 : 0);
 }
 
 String base64UrlDolgusuz(List<int> b) => base64Url.encode(b).replaceAll('=', '');

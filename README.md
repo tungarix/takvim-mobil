@@ -193,8 +193,9 @@ uid kümeleri, bütün alanlar, silinenler, ve tekrar açılımı pencereleri):
   anlaşılır hata verir ve veri hiç değişmez; geçerli ama farklı biçimli dosyalar iki tarafta aynı sonucu verir.
 
 `tool/e2e/wifi_istemci_testi.dart` (`dart run`) Wi-Fi istemcisini yerel (loopback) gerçek bir TLS sunucusuna karşı
-sınar: parmak izi doğru/yanlış, token, 401/403/408/400 eşlemesi, 16 MiB sınırı, yönlendirme, zaman aşımı. Sınama
-sertifikası `test/fixtures/wifi-test-*.pem` (yalnız test; dosyanın başındaki openssl komutuyla üretilir).
+sınar: parmak izi doğru/yanlış, token, 401/403/408/400 eşlemesi, 16 MiB sınırı, yönlendirme, zaman aşımı, TLS 1.1
+sunucusuna bağlanmama. Sınama sertifikası çalışma anında `openssl` ile geçici klasörde üretilir ve silinir (depoya
+anahtar konmaz); `openssl` yoksa komut 2 koduyla "atlandı" der (0 = geçti, 1 = hata).
 
 `tool/e2e/mobil_regresyon.dart` (`dart run`) e2e'nin bulduğu mobil hatalar için saf Dart regresyon
 denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` tablosunu üretir
