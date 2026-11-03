@@ -66,6 +66,16 @@ class Sunucu {
   }
 }
 
+/// gzip kodlayıcısının çıktısını listeye toplar (sunucu parçaları kendi hızında yazar).
+class _ListeSink implements Sink<List<int>> {
+  _ListeSink(this.liste);
+  final List<List<int>> liste;
+  @override
+  void add(List<int> parca) => liste.add(parca);
+  @override
+  void close() {}
+}
+
 Future<void> yaz(HttpRequest r, int durum, Object? json) async {
   r.response.statusCode = durum;
   r.response.headers.contentType = ContentType.json;
@@ -291,6 +301,49 @@ Future<void> tlsli(SecurityContext baglam, String pin) async {
   s = await Sunucu.ac(baglam, normal);
   kontrol('16 MiB üstü gönderim istemcide reddedilir', await tur(() => istemci(s.port, pin).durumGonder('a' * (16 * mib + 1))) == 'cokBuyuk');
   kontrol('...ve sunucuya hiçbir şey gitmedi', s.istekler.isEmpty);
+  await s.kapat();
+
+  // 8b) gzip: HttpClient yanıtı kendiliğinden açar (autoUncompress). Sınır AÇILMIŞ bayt üzerinden uygulanmalı;
+  // yoksa küçük bir sıkıştırılmış gövde belleği şişirirdi ("gzip bombası").
+  s = await Sunucu.ac(baglam, (r, i) async {
+    r.response.headers.contentType = ContentType.json;
+    r.response.headers.set('content-encoding', 'gzip');
+    r.response.add(gzip.encode(utf8.encode(durumMetni)));
+    await r.response.close();
+  });
+  kontrol('gzip: küçük gövde açılıp aynen okunur', await istemci(s.port, pin).durumAl() == durumMetni);
+  await s.kapat();
+
+  var gzTamamlandi = false, gzKesildi = false;
+  s = await Sunucu.ac(baglam, (r, i) async {
+    r.response.headers.contentType = ContentType.json;
+    r.response.headers.set('content-encoding', 'gzip');
+    r.response.done.then((_) {}, onError: (Object _) {
+      gzKesildi = true;
+    });
+    final parcalar = <List<int>>[];
+    final enc = gzip.encoder.startChunkedConversion(_ListeSink(parcalar));
+    final mibBlok = Uint8List(mib)..fillRange(0, mib, 0x61);
+    try {
+      for (var n = 0; n < 600 && !gzKesildi; n++) {
+        // 600 MiB açılmış veri; sıkıştırılmış hâli yalnız birkaç yüz KB
+        enc.add(mibBlok);
+        parcalar.forEach(r.response.add);
+        parcalar.clear();
+        await r.response.flush();
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+      }
+    } catch (_) {
+      gzKesildi = true; // yazma hatası: istemci bağlantıyı kapatmış
+    }
+    if (!gzKesildi) gzTamamlandi = true;
+    enc.close();
+  });
+  final gzSw = Stopwatch()..start();
+  kontrol('gzip bombası (açılınca 600 MiB) -> cokBuyuk', await tur(istemci(s.port, pin).durumAl) == 'cokBuyuk');
+  kontrol('gzip bombası hızla kesildi', gzSw.elapsedMilliseconds < 20000, gzSw.elapsedMilliseconds);
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  kontrol('gzip bombası: istemci bağlantıyı kapattı, sunucu 600 MiB\'ı bitiremedi', gzKesildi && !gzTamamlandi, 'kesildi=$gzKesildi tamamlandi=$gzTamamlandi');
   await s.kapat();
 
   // 9) Zaman aşımı: yanıt gelmezse
