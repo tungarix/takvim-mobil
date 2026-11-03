@@ -61,6 +61,10 @@ final _renkDesen = RegExp(r'^#[0-9a-fA-F]{6}$');
 /// Hatırlatıcı en çok 10 yıl önce (masaüstüyle aynı sınır): fazlası `başlangıç - dakika` hesabında taşar.
 const maksHatirlatici = 10 * 365 * 24 * 60;
 
+/// Bir etkinlikte en çok override. Kaydırılmış her override her görünümde ayrıca kural açılımı
+/// ister (`expand`); dosyadan gelen yüz binlercesi uygulamayı saniyelerce kilitlerdi.
+const maksOverride = 5000;
+
 /// Masaüstünün dosyayı reddettiği ama mobil modelinin sessizce kabul ettiği bozukluklar. Kabul
 /// edilseydi mobilin kendi dışa aktarması masaüstünde TÜMÜYLE reddedilirdi. Yalnız içe aktarmada
 /// denetlenir (depo açılışı gevşek kalır: telefondaki eski veri yüzünden uygulama açılmaz olmasın).
@@ -77,6 +81,9 @@ void _dogrula(Map<String, dynamic> j, Veri dosya) {
   final override = dosya.events.values.fold<int>(0, (n, e) => n + e.overrides.length);
   if (hamOverride != override) throw BicimHatasi('overrides: aynı örnek iki kez');
   for (final ev in dosya.events.values) {
+    if (ev.overrides.length > maksOverride) {
+      throw BicimHatasi('overrides: en çok $maksOverride olabilir (${ev.uid})');
+    }
     if (ev.reminders.any((dk) => dk > maksHatirlatici)) {
       throw BicimHatasi('reminders: en çok $maksHatirlatici dakika (10 yıl) olabilir (${ev.uid})');
     }

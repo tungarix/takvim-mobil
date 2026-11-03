@@ -18,6 +18,10 @@ class PlanliBildirim {
   final DateTime tetik;
 }
 
+/// Bir etkinlik için planlanacak en çok hatırlatıcı sayısı (küçükten başlayarak). Dosyadan gelen
+/// binlerce hatırlatıcılı bir kayıt planı kilitlemesin; arayüz zaten bu kadarını sunmuyor.
+const maksHatirlaticiAdedi = 20;
+
 /// FNV-1a, 31 bit pozitif (Android bildirim kimliği int).
 int _kimlik(String s) {
   var h = 0x811c9dc5;
@@ -44,21 +48,27 @@ List<PlanliBildirim> bildirimPlani(
   };
   final hat = {
     for (final e in v.events.values)
-      if (e.reminders.isNotEmpty && !bittiBlok.contains(e.uid)) e.uid: e.reminders,
+      if (e.reminders.isNotEmpty && !bittiBlok.contains(e.uid)) e.uid: e,
   };
   if (hat.isEmpty) return [];
-  // Başlangıç, en uzun hatırlatıcı kadar pencerenin ötesinde olabilir.
-  final enUzun = hat.values.expand((m) => m).fold<int>(0, (a, b) => a > b ? a : b);
-  final ornekler = v.occurrences(simdiU, sinir.add(Duration(minutes: enUzun)));
 
   final out = <PlanliBildirim>[];
   final gorulen = <int>{};
-  for (final o in ornekler) {
-    for (final m in hat[o.eventUid] ?? const <int>[]) {
-      final tetik = o.start.subtract(Duration(minutes: m));
-      if (!tetik.isAfter(simdiU) || tetik.isAfter(sinir)) continue;
-      final id = _kimlik(fireKey(o.eventUid, m, o));
-      if (gorulen.add(id)) out.add(PlanliBildirim(id, o, m, tetik));
+  for (final e in hat.values) {
+    // Gizli takvimler susar (Veri.occurrences ile aynı kural).
+    final c = v.calendars[e.calendarUid];
+    if (c == null || !c.visible) continue;
+    // Her hatırlatıcı için yalnız tetiğin düşeceği başlangıç aralığı açılır: [şimdi+m, sınır+m].
+    // Eskiden TÜM etkinlikler en uzun hatırlatıcı (10 yıla kadar) kadar uzun pencerede açılıyordu:
+    // dosyadan gelen tek büyük hatırlatıcı 2000 etkinlikte planı 23 sn kilitledi.
+    for (final m in e.reminders.take(maksHatirlaticiAdedi)) {
+      final fark = Duration(minutes: m);
+      for (final o in expand(e, simdiU.add(fark), sinir.add(fark).add(const Duration(seconds: 1)))) {
+        final tetik = o.start.subtract(fark);
+        if (!tetik.isAfter(simdiU) || tetik.isAfter(sinir)) continue;
+        final id = _kimlik(fireKey(o.eventUid, m, o));
+        if (gorulen.add(id)) out.add(PlanliBildirim(id, o, m, tetik));
+      }
     }
   }
   out.sort((a, b) {

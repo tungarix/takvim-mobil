@@ -13,7 +13,8 @@
         android:label="Takvim"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:allowBackup="false">
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -37,17 +38,16 @@
             </intent-filter>
 
             <!-- .takvimsync dosyasına dokununca (dosya yöneticisi, WhatsApp, Drive...) "Birlikte aç".
-                 Filtreler dar tutuldu: kendi mime türümüz ya da .takvimsync uzantısı. -->
+                 Filtreler dar tutuldu: kendi mime türümüz ya da .takvimsync uzantısı. BROWSABLE
+                 BİLİNÇLİ OLARAK yok: bir web sayfası intent: bağlantısıyla uygulamayı başlatamasın. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="content" android:mimeType="application/x-takvimsync"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="content" android:host="*" android:mimeType="*/*"/>
                 <!-- pathPattern'de "." her şeyi yutar; uzantı öncesi nokta sayısı değişebildiği için üç kalıp. -->
                 <data android:pathPattern=".*\\.takvimsync"/>

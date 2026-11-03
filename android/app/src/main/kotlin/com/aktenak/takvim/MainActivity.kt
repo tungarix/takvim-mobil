@@ -66,6 +66,12 @@ class MainActivity : FlutterActivity() {
             else -> null
         }
         if (uri == null) return
+        // Yalnız content:// kabul edilir. Manifest filtresi tek başına yetmez: açık (explicit) intent
+        // filtreyi atlar ve file:// ile uygulamanın kendi özel dosyalarını (takvim.json) okutabilirdi.
+        if (uri.scheme != "content") {
+            setIntent(Intent())
+            return
+        }
         val sonuc: Map<String, String> = try {
             val sinir = 16 * 1024 * 1024
             val cikti = ByteArrayOutputStream()

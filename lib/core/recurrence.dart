@@ -13,6 +13,22 @@ import 'zaman.dart';
 /// kural uygulamayı kilitlemesin, yarım görünüm kilitli uygulamadan iyidir.
 const maksOrnek = 10000;
 
+/// Saatlik/dakikalık kuralda başlangıçtan pencere sonuna kadar gezilecek en çok dönem sayısı.
+/// `rrule` paketi pencereye varmak için başlangıçtan tek tek yürür (başlangıç yıl 1 ve FREQ=HOURLY
+/// olan bir kayıt ölçümde tek açılımda 37 sn, 1970'ten MINUTELY 59 sn sürdü: uygulama kilitlenirdi).
+/// Aşan kural desteklenmeyen sayılır ve tek örneğe düşer (SECONDLY ile aynı yol).
+/// shortcut: gerçek takvim kullanımında saatlik/dakikalık tekrar yok; ihtiyaç olursa açıcı
+/// başlangıcı pencereye yaklaştıracak şekilde yeniden yazılır.
+const maksDonem = 100000;
+
+bool _taranabilir(RecurrenceRule k, DateTime dtstart, DateTime bitis) {
+  final dakika = k.frequency == Frequency.minutely ? 1 : (k.frequency == Frequency.hourly ? 60 : 0);
+  if (dakika == 0 || (k.count != null && k.count! <= maksDonem)) return true;
+  final son = k.until != null && k.until!.isBefore(bitis) ? k.until! : bitis;
+  final donem = son.difference(dtstart).inMinutes / (dakika * (k.interval ?? 1));
+  return donem <= maksDonem;
+}
+
 /// Pencereye somutlaşmış tek örnek. Saklanmaz.
 class Occurrence {
   Occurrence({
@@ -121,6 +137,10 @@ String _wkstAyikla(String satir) {
   return satir.replaceFirst(RegExp(r'(?:^|;)WKST=[A-Z]{2}(?=;|$)'), '').replaceFirst(RegExp(r'^;'), '');
 }
 
+DateTime _kaydir(DateTime d, int yil) => yil == 0
+    ? d
+    : DateTime.utc(d.year + yil, d.month, d.day, d.hour, d.minute, d.second, d.millisecond, d.microsecond);
+
 /// Kural düzeyinde örnek başlangıçları (UTC, sıralı), [after, before] KAPALI.
 /// RRULE + RDATE - EXDATE; override'lar uygulanmaz.
 List<DateTime> kuralBaslangiclari(Event e, DateTime after, DateTime before) {
@@ -130,20 +150,35 @@ List<DateTime> kuralBaslangiclari(Event e, DateTime after, DateTime before) {
   final sonuc = <DateTime>{};
   bool icinde(DateTime u) => !u.isBefore(after) && !u.isAfter(before);
 
-  final kural = e.rrule == null ? null : _kuralCoz(e.rrule!, e.tzid);
+  var kural = e.rrule == null ? null : _kuralCoz(e.rrule!, e.tzid);
+  final dtstart = utcdenDuvar(loc, e.start);
+  if (kural != null && !_taranabilir(kural, dtstart, utcdenDuvar(loc, before).add(const Duration(days: 1)))) kural = null;
   if (kural == null) {
     if (icinde(e.start)) sonuc.add(e.start);
   } else {
     // Duvar saati sınırları ±1 gün genişletilir; kesin süzme UTC'de yapılır.
-    final dtstart = utcdenDuvar(loc, e.start);
     var ws = utcdenDuvar(loc, after).subtract(const Duration(days: 1));
     if (ws.isBefore(dtstart)) ws = dtstart; // paket after >= start ister
     final we = utcdenDuvar(loc, before).add(const Duration(days: 1));
     if (!we.isBefore(ws)) {
-      for (final w in kural
-          .getInstances(start: dtstart, after: ws, includeAfter: true, before: we, includeBefore: true)
+      // `rrule` paketi sonuç üretmeyen (imkânsız: ör. BYMONTH=2;BYMONTHDAY=30) kuralda `before`'a
+      // bakmaz, takvimin sonuna (yıl 9999) kadar tarar: günlük kuralda tek açılım ~2 sn sürdü.
+      // 400 yıl Gregorian takvimin tam döngüsüdür (gün/ay/hafta günü/artık yıl aynı); bütün tarihleri
+      // 400'ün katı yıl ileri taşıyıp pencereyi 9999'un dibine yaklaştırınca boş tarama ~100 ms'ye
+      // iner. Sonuçlar aynı yıl sayısı kadar geri alınır.
+      final yil = ((9998 - we.year) ~/ 400) * 400;
+      final bitis = kural.until;
+      final k = yil == 0
+          ? kural
+          : kural.copyWith(
+              // Pencereden sonraki UNTIL zaten sonucu değiştirmez; atılır (taşıma yılı 9999'u aşmasın).
+              until: bitis != null && bitis.isBefore(we) ? _kaydir(bitis, yil) : null,
+              clearUntil: bitis == null || !bitis.isBefore(we),
+            );
+      for (final w in k
+          .getInstances(start: _kaydir(dtstart, yil), after: _kaydir(ws, yil), includeAfter: true, before: _kaydir(we, yil), includeBefore: true)
           .take(maksOrnek)) {
-        final u = duvardanUtc(loc, w);
+        final u = duvardanUtc(loc, _kaydir(w, -yil));
         if (icinde(u)) sonuc.add(u);
       }
     }
