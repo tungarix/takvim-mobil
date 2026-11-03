@@ -7,7 +7,7 @@
 > Built with Flutter.
 > Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
-> **Durum:** Erken erişim (0.x) · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
+> **Durum:** Erken erişim (0.x), son sürüm 0.3.0 · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
 > **Lisans:** MIT · **İndir:** [Son sürüm](https://github.com/tungarix/takvim-mobil/releases/latest) ·
 > **Site:** [aktenak.tech](https://aktenak.tech)
 
@@ -16,8 +16,9 @@
   <img src="docs/ekran-ayarlar.png" alt="Takvim ayarları: takvimler, hatırlatıcı izinleri, masaüstüyle senkron (örnek verilerle)" width="260">
 </p>
 
-Hesapsız, bulutsuz, sunucusuz. İnternete bağlanmaz: `INTERNET` izni yalnız aynı Wi-Fi ağındaki masaüstüyle
-**Wi-Fi ile eşleştirme** için var (aşağıda). Gün / hafta / ay
+Hesapsız, bulutsuz, sunucusuz. İnternet servislerine bağlanmaz: `INTERNET` izni yalnız aynı Wi-Fi ağındaki
+masaüstüyle **Wi-Fi ile eşleştirme** için var (aşağıda); eşleştirme kullanılmıyorken hiçbir ağ isteği yapılmaz.
+Gün / hafta / ay
 görünümü, görevler, tekrarlı etkinlikler, hatırlatıcılar ve arama var. Verilerin yalnız bu telefonda tutulur
 (`allowBackup=false`: bulut yedeğine de gitmez). Masaüstü Takvim ile `.takvimsync` dosyası aktararak ya da
 aynı Wi-Fi'da QR ile eşleşerek senkron çalışır.
@@ -42,13 +43,13 @@ Her sürüm GitHub Actions'ta derlenir; ekinde `SHA256SUMS.txt` ve bir build pro
 
 ```powershell
 # 1) Özet: SHA256SUMS.txt'deki değerle aynı olmalı
-Get-FileHash .\Takvim-0.2.0.apk -Algorithm SHA256
+Get-FileHash .\Takvim-0.3.0.apk -Algorithm SHA256
 
 # 2) Dosyanın bu depodan, bu iş akışıyla derlendiği (GitHub CLI gerekir)
-gh attestation verify .\Takvim-0.2.0.apk -R tungarix/takvim-mobil
+gh attestation verify .\Takvim-0.3.0.apk -R tungarix/takvim-mobil
 
 # 3) İmza sertifikası (Android SDK build-tools'taki apksigner)
-apksigner verify --print-certs Takvim-0.2.0.apk
+apksigner verify --print-certs Takvim-0.3.0.apk
 ```
 
 Sertifika SHA-256 parmak izi, her sürümde aynı olmalı:
@@ -76,14 +77,14 @@ bir şey olmaz. Bozuk dosya ya da uygulamadan yeni bir sürümle yazılmış dos
 reddedilir ve veri hiç değişmez. Dosya biçimi ve birleştirme kuralları masaüstü deposundaki
 [`docs/senkron.md`](https://github.com/tungarix/takvim/blob/master/docs/senkron.md) belgesindedir.
 
-> **Not:** Masaüstü tarafı, Takvim **1.8.0** ve sonrasında Ayarlar > "Telefonla senkron" bölümündedir. Daha eski masaüstü sürümleri `.takvimsync` dosyasını tanımaz.
+> **Not:** Masaüstü tarafı, Takvim **1.8.0** ve sonrasında Ayarlar > "Telefonla senkron" bölümündedir (1.8.0 yalnız dosya ile senkron eder). **Wi-Fi ile eşleştirme** masaüstü Takvim **1.9.0** ve sonrasını ister. Daha eski masaüstü sürümleri `.takvimsync` dosyasını tanımaz.
 
 Yalnızca güvendiğin kaynaktan gelen `.takvimsync` dosyalarını aç: dosya içe aktarmadan önce
 doğrulanır ve senin onayını bekler, ama içe aktarılan kayıtlar mevcut verinle birleşir.
 
 ## Wi-Fi ile eşleştirme (aynı ağdaki masaüstüyle doğrudan senkron)
 
-Dosya taşımadan, telefon ve bilgisayar **aynı Wi-Fi ağındayken** (Wi-Fi eşleştirmeyi içeren bir masaüstü Takvim sürümü gerekir):
+Dosya taşımadan, telefon ve bilgisayar **aynı Wi-Fi ağındayken** (masaüstü Takvim **1.9.0** ya da sonrası gerekir; 1.8.0 yalnız dosya ile senkron eder):
 
 1. Bilgisayarda Takvim > Ayarlar > Telefonla senkron > **"Wi-Fi ile eşleştir"**: QR kod ve aynı bağlantının
    metni çıkar (en çok 3 dakika geçerli).
@@ -114,6 +115,13 @@ yalnız **onay ekranına** götürür, kendiliğinden bağlanmaz.
 Çalışmazsa: aynı Wi-Fi'da olduğunu, bilgisayardaki eşleştirme ekranının hâlâ açık olduğunu ve ağın cihazları
 birbirinden ayırmadığını (misafir ağlar bunu yapabilir) kontrol et. **Yedek yol** her zaman dosya aktarmadır
 (yukarıdaki "Masaüstüyle senkron").
+
+## Sürüm notları
+
+- **0.3.0**: aynı Wi-Fi'daki masaüstü Takvim 1.9.0+ ile **Wi-Fi eşleştirme** (QR ya da bağlantı metni, iki onay,
+  sertifika parmak iziyle sabitlenmiş HTTPS; yedek yol hâlâ dosya aktarma). Yeni izin: yalnız `INTERNET`.
+  Güvenlik incelemesi: [`guvenlik/incelemeler/v0.3.0.md`](guvenlik/incelemeler/v0.3.0.md).
+- **0.2.0**: ilk yayımlanan sürüm (dosya ile senkron, hatırlatıcılar, gün/hafta/ay görünümü, görevler).
 
 ## Özellikler
 

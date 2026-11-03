@@ -16,6 +16,7 @@ body:
       label: Takvim sürümü
       description: Ayarlar ekranının en altında "Sürüm X.Y.Z" olarak yazar (APK dosya adında da var: Takvim-X.Y.Z.apk).
       options:
+        - v0.3.0
         - v0.2.0
         - Bilmiyorum
     validations:
