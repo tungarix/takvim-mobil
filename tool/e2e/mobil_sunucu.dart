@@ -14,6 +14,8 @@ import 'package:takvim/core/zaman.dart';
 import 'package:takvim/store/takvim_store.dart';
 import 'package:takvim/sync/export.dart';
 import 'package:takvim/sync/import.dart';
+import 'package:takvim/sync/wifi_baglanti.dart';
+import 'package:takvim/sync/wifi_istemci.dart';
 
 class Cihaz {
   Cihaz(this.ofset);
@@ -180,6 +182,59 @@ Future<Object?> calistir(String op, Map<String, dynamic> m) async {
         }
       });
       return null;
+    case 'wifi_ayristir':
+      // Bağlantıyı ÜRETİM ayrıştırıcısıyla çözer; token dönmez.
+      try {
+        final b = wifiBaglantiAyristir(m['metin'] as String);
+        return {'ok': true, 'ip': b.ip, 'port': b.port, 'ad': b.ad, 'parmak': b.parmakIzi};
+      } on WifiBaglantiHatasi catch (e) {
+        return {'ok': false, 'tur': e.tur.name};
+      }
+    case 'wifi_oturum':
+      // Üretim istemcisi (varsayılan özel-IP kapısı DAHİL; gevşetme yok) ile adımlar:
+      // hello -> al (GET /v1/state) -> uygula (mobil içe aktarma) -> gonder (POST /v1/state, mobilin tam durumu).
+      // `baglanti` bağlantı metni; ya da `ham` {ip,port,token,parmak} ayrıştırıcıyı atlayarak doğrudan kurar.
+      final WifiBaglanti b;
+      if (m['ham'] != null) {
+        final h = m['ham'] as Map;
+        b = WifiBaglanti(ip: h['ip'] as String, port: h['port'] as int, token: h['token'] as String, parmakIzi: h['parmak'] as String, ad: 'e2e');
+      } else {
+        try {
+          b = wifiBaglantiAyristir(m['baglanti'] as String);
+        } on WifiBaglantiHatasi catch (e) {
+          return {'hata': 'ayristir:${e.tur.name}', 'asama': 'ayristir'};
+        }
+      }
+      final oturum = WifiIstemci(b, postSuresi: Duration(seconds: (m['post_sn'] as int?) ?? 90));
+      final cikti = <String, Object?>{};
+      String? metin;
+      try {
+        for (final adim in (m['adimlar'] as List?)?.cast<String>() ?? const ['hello', 'al', 'uygula', 'gonder']) {
+          switch (adim) {
+            case 'hello':
+              final hl = await oturum.hello();
+              cikti['hello'] = {'ad': hl.ad, 'uygulama': hl.uygulama};
+            case 'al':
+              metin = await oturum.durumAl();
+              cikti['al_bayt'] = utf8.encode(metin).length;
+            case 'uygula':
+              final sonuc = importEt(s.veri, metin ?? (throw StateError('once al')));
+              await s.uygula(sonuc.veri);
+              cikti['yerel'] = raporJson(sonuc.rapor);
+            case 'gonder':
+              final r = await oturum.durumGonder(disaAktarMetin(s.veri, s.cihaz, simdi: c.saat()));
+              cikti['uzak'] = {'added': r.added, 'updated': r.updated, 'deleted': r.deleted, 'skipped': r.skipped};
+            default:
+              throw StateError('bilinmeyen adim: $adim');
+          }
+        }
+      } on WifiHatasi catch (e) {
+        final tok = b.token;
+        return {...cikti, 'hata': e.tur.name, 'ayrinti': e.ayrinti, 'token_sizdi': e.toString().contains(tok)};
+      } finally {
+        oturum.kapat();
+      }
+      return cikti;
     case 'depo_yolu':
       return s.cihaz.id;
     default:

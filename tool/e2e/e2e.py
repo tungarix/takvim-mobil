@@ -1,7 +1,7 @@
 """Takvim masaustu <-> mobil senkron UCTAN UCA dogrulama kosucusu.
 
 Kullanim (takvim-mobil kokunden; tek komut icin `tool/e2e/calistir.ps1`):
-    <takvim>/.venv/Scripts/python.exe tool/e2e/e2e.py [--senaryo a,b,c,d,e,olcek,f] [--tut]
+    <takvim>/.venv/Scripts/python.exe tool/e2e/e2e.py [--senaryo a,b,c,d,e,olcek,f,wifi] [--tut]
 
 Masaustu kodu GECICI SQLite ile, mobil kodu GECICI JSON ile surulur; gercek kullanici
 verisine dokunulmaz. Cikis kodu 0 = tum denetimler gecti.
@@ -20,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from cihazlar import MobilSunucu  # noqa: E402
-from senaryolar import SENARYOLAR, Baglam  # noqa: E402
+from senaryolar import SENARYOLAR as ESKI, Baglam  # noqa: E402
+from wifi_senaryolar import SENARYOLAR as WIFI  # noqa: E402
+
+SENARYOLAR = {**ESKI, **WIFI}
 
 
 def main() -> int:

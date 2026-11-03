@@ -1,14 +1,14 @@
 # Masaustu <-> mobil senkron UCTAN UCA dogrulamasi: tek komut.
 #
 #   powershell -File tool/e2e/calistir.ps1                 # her sey
-#   powershell -File tool/e2e/calistir.ps1 -Senaryo a,b    # secili senaryolar (a,b,c,d,e,olcek,f)
+#   powershell -File tool/e2e/calistir.ps1 -Senaryo a,b    # secili senaryolar (a,b,c,d,e,olcek,f,wifi)
 #
 # Adimlar: (1) mobil saf Dart regresyon denetimleri (+ Wi-Fi istemcisi TLS denetimleri), (2) iki cihazin cift yonlu e2e senaryolari.
 # Masaustu kodu GECICI SQLite'la, mobil kodu GECICI JSON'la surulur; gercek veriye dokunulmaz.
 # flutter test KULLANILMAZ (bu makinede motor cokuyor): yalniz `dart run` ve masaustu venv'i.
 # Masaustu deposu varsayilan olarak ..\takvim; baska yerdeyse $env:TAKVIM_YOLU ile verin.
 param(
-    [string]$Senaryo = 'a,b,c,d,e,olcek,f',
+    [string]$Senaryo = 'a,b,c,d,e,olcek,f,wifi',
     [switch]$Tut
 )
 
