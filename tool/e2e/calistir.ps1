@@ -3,7 +3,7 @@
 #   powershell -File tool/e2e/calistir.ps1                 # her sey
 #   powershell -File tool/e2e/calistir.ps1 -Senaryo a,b    # secili senaryolar (a,b,c,d,e,olcek,f)
 #
-# Adimlar: (1) mobil saf Dart regresyon denetimleri, (2) iki cihazin cift yonlu e2e senaryolari.
+# Adimlar: (1) mobil saf Dart regresyon denetimleri (+ Wi-Fi istemcisi TLS denetimleri), (2) iki cihazin cift yonlu e2e senaryolari.
 # Masaustu kodu GECICI SQLite'la, mobil kodu GECICI JSON'la surulur; gercek veriye dokunulmaz.
 # flutter test KULLANILMAZ (bu makinede motor cokuyor): yalniz `dart run` ve masaustu venv'i.
 # Masaustu deposu varsayilan olarak ..\takvim; baska yerdeyse $env:TAKVIM_YOLU ile verin.
@@ -26,6 +26,10 @@ try {
     Write-Host '== 1/2 mobil regresyon denetimleri (dart run) =='
     dart run tool/e2e/mobil_regresyon.dart
     if ($LASTEXITCODE -ne 0) { throw 'mobil regresyon denetimleri basarisiz' }
+
+    Write-Host "`n== Wi-Fi istemcisi: gercek TLS ile sertifika sabitleme (dart run) =="
+    dart run tool/e2e/wifi_istemci_testi.dart
+    if ($LASTEXITCODE -ne 0) { throw 'Wi-Fi istemci denetimleri basarisiz' }
 
     Write-Host "`n== 2/2 masaustu <-> mobil e2e ($Senaryo) =="
     $args2 = @('tool/e2e/e2e.py', '--senaryo', $Senaryo)

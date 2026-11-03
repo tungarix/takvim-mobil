@@ -28,3 +28,6 @@ jobs:
 
       - name: Testler
         run: flutter test
+
+      - name: Wi-Fi istemcisi (gerçek TLS, sertifika sabitleme)
+        run: dart run tool/e2e/wifi_istemci_testi.dart
