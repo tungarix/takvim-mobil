@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:takvim/app/kontrol.dart';
 import 'package:takvim/core/bildirim_plani.dart';
+import 'package:takvim/core/models.dart';
+import 'package:takvim/core/veri.dart';
 import 'package:takvim/core/yerel_zaman.dart';
 import 'package:takvim/platform/bildirim.dart';
 import 'package:takvim/platform/dosya_servisi.dart';
@@ -142,4 +144,39 @@ Future<void> uygulamaAc(WidgetTester t, TakvimKontrol k, {SahteKopru? kopru}) as
   await t.pumpWidget(TakvimUygulamasi(kontrol: k, kopru: kopru));
   await t.pump();
   await t.pump(const Duration(milliseconds: 300));
+}
+
+Event etkinlik(TakvimKontrol k, String uid, String baslik, {String? rrule, List<int> hatirlatici = const []}) => Event(
+      uid: uid,
+      calendarUid: k.varsayilanTakvim!.uid,
+      title: baslik,
+      start: t('2026-11-03T11:00:00Z'), // 14:00 yerel
+      end: t('2026-11-03T12:00:00Z'),
+      tzid: 'Europe/Istanbul',
+      rrule: rrule,
+      reminders: hatirlatici,
+      createdAt: t('2026-11-03T10:00:00Z'),
+      updatedAt: t('2026-11-03T10:00:00Z'),
+    );
+
+Future<void> ekle(WidgetTester tester, TakvimKontrol k, void Function(Veri) f) async {
+  await tester.runAsync(() => k.yap(f));
+  await tester.pump();
+}
+
+String ornekDosya() => File('test/fixtures/senkron-ornek.takvimsync').readAsStringSync();
+
+/// Önceki (çöken ya da yarıda kesilen) koşulardan kalan geçici klasörleri siler: tearDownAll
+/// süreç çökünce hiç çalışmaz, klasörler %TEMP%'te birikirdi.
+Future<void> eskiDizinleriTemizle() async {
+  final sinir = DateTime.now().subtract(const Duration(minutes: 10));
+  await for (final e in Directory.systemTemp.list()) {
+    if (e is Directory && e.uri.pathSegments.where((s) => s.isNotEmpty).last.startsWith('takvim_test') && e.statSync().modified.isBefore(sinir)) {
+      try {
+        await e.delete(recursive: true);
+      } on FileSystemException {
+        // başka bir koşu kullanıyor olabilir; sonraki sefer silinir
+      }
+    }
+  }
 }

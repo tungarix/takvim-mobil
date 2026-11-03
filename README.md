@@ -94,6 +94,24 @@ Sürüm tek yerde: `lib/surum.dart` (`test/cekirdek_ek_test.dart` bunun `pubspec
   ötesindeki hatırlatıcılar bir sonraki açılışta kurulur.
 - Yalnız Türkçe arayüz (metinler tek dosyada, çeviriye hazır).
 
+## Testleri çalıştırma (Windows uyarısı)
+
+Bu geliştirme makinesinde `flutter_tester` motoru rastgele `0xC0000005` (erişim ihlali) ile çöküyor;
+süreç ölünce kalan testler mesajsız "did not complete" olur ve `flutter test` kırmızı biter. Bu
+Takvim'e özgü değil: dokunulmamış kardeş proje `dosya-dolabi`'nde de 4/4 koşuda aynı çökme olur,
+yalnızca `pumpWidget(SizedBox())` yapan boş bir test dosyası da zaman zaman çöker. Çökme gerçek
+kare çizen (yeni sahne üreten) pump sayısıyla artar. Çözüm motor tarafında olduğundan testler
+gevşetilmedi; bunun yerine:
+
+- Testler küçük dosyalara bölündü (her dosya ayrı süreç, çökme alanı daralır).
+- `tool/test_calistir.ps1` her dosyayı ayrı çalıştırır; yalnızca çökme imzası (başka hata metni
+  olmadan "did not complete") görülürse o dosyayı yeniden dener. Gerçek test hatası yeniden denenmez.
+
+      powershell -File tool/test_calistir.ps1
+
+Düz `flutter test` bu makinede çoğu zaman çökme yüzünden kırmızı biter; CI'da (çökmenin
+görülmediği ortam) olduğu gibi çalışır.
+
 ## Lisans
 
 MIT (bkz. `LICENSE`).
