@@ -52,6 +52,20 @@ class WifiHello {
 class WifiRapor {
   const WifiRapor({this.added = 0, this.updated = 0, this.deleted = 0, this.skipped = 0});
   final int added, updated, deleted, skipped;
+
+  /// `{"added":..,"updated":..,"deleted":..,"skipped":..}`: her alan düz sayı YA DA tür bazlı nesne
+  /// (masaüstü `senkron/ice.py`: `{"calendar":n,"event":n,"task":n}`; değerler toplanır). Eksik, negatif,
+  /// bozuk ya da bilinmeyen alan güvenle 0 sayılır; ayrıştırma hiçbir zaman hata fırlatmaz.
+  factory WifiRapor.jsondan(Object? j) {
+    if (j is! Map) return const WifiRapor();
+    int n(Object? v) {
+      if (v is int) return v < 0 ? 0 : v;
+      if (v is Map) return v.values.whereType<int>().fold(0, (a, b) => b < 0 ? a : a + b);
+      return 0;
+    }
+
+    return WifiRapor(added: n(j['added']), updated: n(j['updated']), deleted: n(j['deleted']), skipped: n(j['skipped']));
+  }
 }
 
 /// Arayüzün konuştuğu soyutlama (testlerde sahtesi var).
@@ -142,10 +156,8 @@ class WifiIstemci implements WifiOturum {
     final bayt = Uint8List.fromList(utf8.encode(metin));
     if (bayt.length > wifiGetEnFazlaBayt) throw const WifiHatasi(WifiHataTuru.cokBuyuk, 'gönderilecek veri 16 MB sınırını aşıyor');
     final j = _json(await _istek('POST', '/v1/state', sure: postSuresi, sinir: _raporSiniri, govde: bayt));
-    final r = j is Map ? j['report'] : null;
-    if (r is! Map) return const WifiRapor(); // masaüstü uyguladı ama rapor okunamadı: hata sayılmaz
-    int n(String k) => r[k] is int ? r[k] as int : 0;
-    return WifiRapor(added: n('added'), updated: n('updated'), deleted: n('deleted'), skipped: n('skipped'));
+    // Masaüstü uyguladı ama rapor okunamadı: hata sayılmaz (sayılar 0 görünür).
+    return WifiRapor.jsondan(j is Map ? j['report'] : null);
   }
 
   Object? _json(Uint8List govde) {

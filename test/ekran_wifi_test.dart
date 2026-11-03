@@ -76,7 +76,14 @@ void main() {
   });
 
   testWidgets('başarılı akış: iki onay, telefona uygula, tam durumu gönder, iki rapor, bildirimler yeniden kurulur', (tester) async {
-    final h = await hazirla(tester);
+    // Masaüstünün gerçek şekli: tür bazlı rapor nesneleri (toplanarak gösterilir).
+    final uzak = WifiRapor.jsondan({
+      'added': {'calendar': 1, 'event': 2, 'task': 3},
+      'updated': {'event': 4},
+      'deleted': {'task': 5},
+      'skipped': 6,
+    });
+    final h = await hazirla(tester, oturum: SahteWifi(durum: ornekDosya(), rapor: uzak));
     final planOnce = h.s.bildirim.planlar.length;
     await _eslestirSayfasi(tester);
     await _yapistir(tester, _baglanti);
@@ -106,7 +113,10 @@ void main() {
     expect(find.text('Wi-Fi senkronu tamamlandı'), findsOneWidget);
     expect(find.textContaining('Telefona'), findsOneWidget);
     expect(find.textContaining('Bilgisayara'), findsOneWidget);
-    expect(find.textContaining('Eklenen: 2'), findsWidgets); // sahte rapor: added 2, updated 1
+    expect(find.textContaining('Eklenen: 6'), findsOneWidget); // Bilgisayara: 1+2+3
+    expect(find.textContaining('Güncellenen: 4'), findsOneWidget);
+    expect(find.textContaining('Silinen: 5'), findsOneWidget);
+    expect(find.textContaining('Atlanan: 6'), findsOneWidget);
     expect(h.s.k.ayarlar.sonSenkron, isNotNull);
     expect(h.s.bildirim.planlar.length, greaterThan(planOnce));
     await tester.tap(find.text('Tamam'));

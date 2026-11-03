@@ -284,12 +284,8 @@ def mutlu(ctx: Baglam):
         uzak = r["uzak"]
         k("mutlu: masaustu gercekten degisiklik raporladi (added>0)", rap["added"] > 0, rap)
         eslesti = (uzak["added"], uzak["updated"], uzak["deleted"]) == (rap["added"], rap["updated"], rap["deleted"])
-        if not eslesti and toplam(uzak) == 0:
-            # BILINEN SORUN (mobil lib/sync/wifi_istemci.dart, e2e kapsami disi): masaustu `report` alanlarini tur bazli nesne
-            # ({"calendar":n,"event":n,"task":n}) olarak yollar; istemci yalniz tamsayi okur => telefon hep "0 degisiklik" gosterir.
-            print("UYARI: mobil istemci masaustu raporunu (tur bazli nesne) okuyamiyor: wifi_istemci.dart WifiRapor ayristirmasi", flush=True)
-        else:
-            k("mutlu: mobilin gordugu masaustu raporu gercek degisiklikle ayni", eslesti and toplam(uzak) > 0, (uzak, rap))
+        # SIKI: mobil istemci masaustunun tur bazli rapor nesnelerini toplayip gercek sayilari gormeli (0 gorunmemeli).
+        k("mutlu: mobilin gordugu masaustu raporu gercek degisiklikle ayni", eslesti and toplam(uzak) > 0, (uzak, rap))
         k("mutlu: masaustu verisi onaydan sonra degisti", goruntu(d) != on, "")
         sd, sm = ctx.esit(d, m, dz, "wifi mutlu", [PENCERE] + DAR_PENCERELER)
         ev = {e["uid"]: e for e in sd["events"]}

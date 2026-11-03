@@ -92,7 +92,15 @@ Future<void> normal(HttpRequest r, Istek i) async {
   if (i.yol == '/v1/hello' && i.yontem == 'GET') return yaz(r, 200, helloJson);
   if (i.yol == '/v1/state' && i.yontem == 'GET') return yaz(r, 200, durumMetni);
   if (i.yol == '/v1/state' && i.yontem == 'POST') {
-    return yaz(r, 200, {'report': {'added': 3, 'updated': 2, 'deleted': 1, 'skipped': 4}});
+    // Masaüstünün gerçek şekli (senkron/ice.py as_dict): her alan tür bazlı nesne.
+    return yaz(r, 200, {
+      'report': {
+        'added': {'calendar': 1, 'event': 1, 'task': 1},
+        'updated': {'calendar': 0, 'event': 2, 'task': 0},
+        'deleted': {'calendar': 0, 'event': 0, 'task': 1},
+        'skipped': {'calendar': 0, 'event': 4, 'task': 0},
+      }
+    });
   }
   return yaz(r, 404, {'error': 'yok'});
 }
@@ -192,7 +200,7 @@ Future<void> tlsli(SecurityContext baglam, String pin) async {
   kontrol('state: gövde birebir', await c.durumAl() == durumMetni);
   final giden = jsonEncode({'format': 'takvim-sync', 'version': 1, 'not': 'Türkçe ğüşiöç'});
   final r = await c.durumGonder(giden);
-  kontrol('POST raporu', r.added == 3 && r.updated == 2 && r.deleted == 1 && r.skipped == 4);
+  kontrol('POST raporu (tür bazlı nesneler toplanır)', r.added == 3 && r.updated == 2 && r.deleted == 1 && r.skipped == 4, '${r.added} ${r.updated} ${r.deleted} ${r.skipped}');
   kontrol('3 istek geldi', s.istekler.length == 3, s.istekler.length);
   kontrol('her istekte Bearer token', s.istekler.every((i) => i.yetki == 'Bearer $token'));
   final post = s.istekler.last;

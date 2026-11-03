@@ -276,4 +276,41 @@ void main() {
       }
     });
   });
+
+  group('WifiRapor.jsondan (masaüstü POST /v1/state raporu)', () {
+    List<int> sayilar(Object? j) {
+      final r = WifiRapor.jsondan(j);
+      return [r.added, r.updated, r.deleted, r.skipped];
+    }
+
+    test('tür bazlı nesne (masaüstünün gerçek şekli): değerler toplanır', () {
+      expect(
+          sayilar({
+            'added': {'calendar': 1, 'event': 2, 'task': 3},
+            'updated': {'calendar': 0, 'event': 4, 'task': 0},
+            'deleted': {'task': 5},
+            'skipped': {'event': 6},
+          }),
+          [6, 4, 5, 6]);
+    });
+
+    test('düz sayı ve karışık biçim', () {
+      expect(sayilar({'added': 3, 'updated': 2, 'deleted': 1, 'skipped': 4}), [3, 2, 1, 4]);
+      expect(sayilar({'added': {'event': 2}, 'updated': 7, 'deleted': {}, 'skipped': 1}), [2, 7, 0, 1]);
+    });
+
+    test('boş, eksik ve bilinmeyen alan 0 sayılır', () {
+      expect(sayilar(<String, Object?>{}), [0, 0, 0, 0]);
+      expect(sayilar({'added': 2, 'baska': 9}), [2, 0, 0, 0]);
+      expect(sayilar(null), [0, 0, 0, 0]);
+    });
+
+    test('bozuk girdi hata fırlatmaz, 0 sayılır', () {
+      expect(sayilar('rapor'), [0, 0, 0, 0]);
+      expect(sayilar([1, 2]), [0, 0, 0, 0]);
+      expect(sayilar({'added': 'x', 'updated': null, 'deleted': 1.5, 'skipped': true}), [0, 0, 0, 0]);
+      expect(sayilar({'added': {'event': 'x', 'task': 2, 'calendar': null}}), [2, 0, 0, 0]);
+      expect(sayilar({'added': -5, 'updated': {'event': -1, 'task': 3}}), [0, 3, 0, 0]);
+    });
+  });
 }
