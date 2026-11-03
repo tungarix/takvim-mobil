@@ -5,6 +5,8 @@
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'tz_takma_adlar.dart';
+
 /// Dosya/model biçimi bozuk (bilinmeyen alan değil; eksik, yanlış tip, geçersiz değer).
 class BicimHatasi implements Exception {
   BicimHatasi(this.mesaj);
@@ -66,16 +68,21 @@ String gunDogrula(String s) {
 bool _basladi = false;
 
 /// IANA adından saat dilimi; bilinmiyorsa FormatException.
+///
+/// `timezone` paketi "UTC", "Europe/Amsterdam", "Asia/Calcutta", "US/Eastern" gibi takma
+/// adları bilmiyor, masaüstü (zoneinfo) biliyor: önce adın kendisi, olmazsa takma ad tablosu.
 tz.Location konumBul(String tzid) {
   if (!_basladi) {
     tzdata.initializeTimeZones();
     _basladi = true;
   }
-  try {
-    return tz.getLocation(tzid);
-  } catch (_) {
-    throw FormatException('Geçersiz IANA saat dilimi: "$tzid"');
+  for (final ad in [tzid, tzTakmaAdlar[tzid]]) {
+    if (ad == null) continue;
+    try {
+      return tz.getLocation(ad);
+    } catch (_) {}
   }
+  throw FormatException('Geçersiz IANA saat dilimi: "$tzid"');
 }
 
 const _gunMs = 86400000;

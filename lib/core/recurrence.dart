@@ -56,7 +56,7 @@ String _duvarMetni(DateTime w) =>
 /// UNTIL "duvar saati" olarak verilir (paket saat dilimi bilmiyor): Z'li UNTIL
 /// gerçek UTC'dir, tzid'e çevrilir; Z'siz UNTIL zaten yereldir; yalnız tarih
 /// ise o günün sonu (masaüstüyle aynı). Çözülemezse null.
-RecurrenceRule? _kuralCoz(String metin, String tzid) {
+RecurrenceRule? _kuralCoz(String metin, String tzid, {bool kati = false}) {
   final loc = konumBul(tzid);
   var satir = metin.split(RegExp(r'[\r\n]+')).map((s) => s.trim()).firstWhere(
         (s) => s.isNotEmpty && (!s.contains(':') || s.toUpperCase().startsWith('RRULE:')),
@@ -64,6 +64,10 @@ RecurrenceRule? _kuralCoz(String metin, String tzid) {
       );
   if (satir.isEmpty) return null;
   if (satir.toUpperCase().startsWith('RRULE:')) satir = satir.substring(6);
+  // RFC 5545: kural metni büyük/küçük harf duyarsız (dateutil öyle okur); paket yalnız büyük harf biliyor.
+  satir = satir.toUpperCase();
+  satir = _wkstAyikla(satir);
+  if (satir.isEmpty) return null;
   // rrule paketi SECONDLY'de aynı anı tekrar tekrar üretiyor (doğrulandı); takvimde
   // anlamı da yok, desteklenmeyen sayılır.
   if (RegExp(r'FREQ=SECONDLY', caseSensitive: false).hasMatch(satir)) return null;
@@ -84,9 +88,37 @@ RecurrenceRule? _kuralCoz(String metin, String tzid) {
   });
   try {
     return RecurrenceRule.fromString('RRULE:$satir');
+  } on FormatException catch (e) {
+    // Katı kipte yalnız "desteklenmiyor" dışındaki (sözdizimi) hatalar atılır.
+    if (kati && !e.message.contains('Unsupported')) rethrow;
+    return null;
   } catch (_) {
     return null; // desteklenmeyen kural (ör. WKST=SU): açıcı tek örneğe düşer
   }
+}
+
+/// RRULE metni sözdizimi bakımından bozuk mu (ör. `FREQ=BOGUS`, `COUNT=x`)? Geçerli ama açıcının
+/// desteklemediği kurallar (ör. aralıklı haftalık + WKST=SU) bozuk SAYILMAZ: bunlar tek örneğe düşer.
+bool kuralBozuk(String metin, String tzid) {
+  try {
+    _kuralCoz(metin, tzid, kati: true);
+    return false;
+  } on FormatException {
+    return true;
+  }
+}
+
+/// `rrule` paketi yalnız WKST=MO'yu tanıyor; Google gibi üreticiler `WKST=SU` yazar. WKST yalnızca
+/// aralıklı haftalık (INTERVAL>1) ve BYWEEKNO'lu kuralın sonucunu değiştirir (RFC 5545); onun dışında
+/// WKST atılır ve kural normal açılır. Sonucu değiştirecek ise boş döner: açıcı tek örneğe düşer.
+String _wkstAyikla(String satir) {
+  final w = RegExp(r'(?:^|;)WKST=([A-Z]{2})(?=;|$)').firstMatch(satir);
+  if (w == null || w.group(1) == 'MO') return satir;
+  final aralikli = RegExp(r'(?:^|;)INTERVAL=(\d+)').firstMatch(satir);
+  final etkili = (satir.contains('FREQ=WEEKLY') && aralikli != null && int.parse(aralikli.group(1)!) > 1) ||
+      satir.contains('BYWEEKNO=');
+  if (etkili) return '';
+  return satir.replaceFirst(RegExp(r'(?:^|;)WKST=[A-Z]{2}(?=;|$)'), '').replaceFirst(RegExp(r'^;'), '');
 }
 
 /// Kural düzeyinde örnek başlangıçları (UTC, sıralı), [after, before] KAPALI.

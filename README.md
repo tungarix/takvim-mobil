@@ -39,6 +39,40 @@ Birleştirme güvenlidir: yalnızca daha yeni kayıtlar uygulanır, aynı dosya 
 bir şey olmaz. Bozuk dosya ya da uygulamadan yeni bir sürümle yazılmış dosya anlaşılır bir mesajla
 reddedilir ve veri hiç değişmez. Son senkron zamanı Ayarlar'da görünür.
 
+## Masaüstü <-> mobil uçtan uca doğrulama
+
+Tek komut (mobil kökünden; `dart` PATH'te ve masaüstü deposunda `.venv` kurulu olmalı):
+
+    powershell -File tool/e2e/calistir.ps1                  # her şey (~30 sn)
+    powershell -File tool/e2e/calistir.ps1 -Senaryo a,f     # seçili senaryolar: a,b,c,d,e,olcek,f
+
+Masaüstü kodu (`takvim/senkron`, `takvim/store`) GEÇİCİ SQLite dosyasıyla, mobil kodu (`lib/core`,
+`lib/sync`, `lib/store`) GEÇİCİ JSON deposuyla sürülür (`tool/e2e/mobil_sunucu.dart`); ikisinin
+arasında yalnızca `.takvimsync` dosyaları geçer. Gerçek `%LOCALAPPDATA%` veritabanına ve telefon
+verisine dokunulmaz. `flutter test` kullanılmaz.
+
+Mobil saati gerçek saatten `ofset(saniye)` ile kaydırılabilir (masaüstü SQLite tetikleyicileriyle gerçek
+saati kullanır): "mobil sonra düzenledi" = +600 sn, "masaüstü sonra" = -600 sn.
+
+Senaryolar (her biri iki cihazın dosya olarak dışa aktarılan TAM durumunu karşılaştırır: takvim/etkinlik/görev
+uid kümeleri, bütün alanlar, silinenler, ve tekrar açılımı pencereleri):
+
+- **a** masaüstünde başla (tekrarlı + override + hatırlatıcı + görev + saat planlı görev) -> mobil ->
+  mobilde düzenle/tamamla/sil/ekle -> masaüstü -> ikinci dalga -> eşit.
+- **b** LWW iki yön ve iki içe aktarma sırası; düzenle-vs-sil (etkinlik/görev, iki yön, iki zaman sırası);
+  takvim silme (CASCADE, yetim etkinlik, eski silme); silip geri al.
+- **c** iki cihazda bağımsız "Kişisel" takvimi ad eşleşmesiyle birleşir (sırayla ve eşzamanlı çapraz dosya), çift takvim olmaz.
+- **d** aynı dosyayı iki kez içe aktar (değişiklik yok, depo birebir aynı), ping-pong ve silme yankısı yok.
+- **e** Türkçe/emoji, tzid çeşitleri (takma adlar dahil), tüm gün, DST öncesi/sonrası, boş/null alanlar,
+  10 bin karakter, çeşitli RRULE'lar; iki yönde.
+- **olcek** 2000 etkinlik / 500 görev (ve 4000/1000) iki yönde, adım süreleri raporlanır; her adım 15 sn'den kısa olmalı.
+- **f** bozuk/eksik/yanlış tipli/yinelenen uid'li/yeni sürümlü/farklı uzantılı/BOM'lu dosyalar: iki taraf
+  anlaşılır hata verir ve veri hiç değişmez; geçerli ama farklı biçimli dosyalar iki tarafta aynı sonucu verir.
+
+`tool/e2e/mobil_regresyon.dart` (`dart run`) e2e'nin bulduğu mobil hatalar için saf Dart regresyon
+denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` tablosunu üretir
+(`timezone` paketinin bilmediği IANA takma adları: `UTC`, `Europe/Amsterdam`, `Asia/Calcutta`...).
+
 ## Yapı
 
 - `lib/core/` saf Dart (Flutter'a ve `store/`a bağlı değil): modeller, tekrar açılımı

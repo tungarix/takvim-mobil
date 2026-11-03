@@ -6,6 +6,8 @@
 // sonucu tek atomik yazmayla (store/) kalıcı kılar.
 import 'dart:convert';
 
+import '../core/models.dart';
+import '../core/recurrence.dart';
 import '../core/veri.dart';
 import '../core/zaman.dart';
 import 'export.dart';
@@ -54,10 +56,71 @@ Map<String, dynamic> _ayristir(String metin) {
   return j;
 }
 
+final _renkDesen = RegExp(r'^#[0-9a-fA-F]{6}$');
+
+/// Hatırlatıcı en çok 10 yıl önce (masaüstüyle aynı sınır): fazlası `başlangıç - dakika` hesabında taşar.
+const maksHatirlatici = 10 * 365 * 24 * 60;
+
+/// Masaüstünün dosyayı reddettiği ama mobil modelinin sessizce kabul ettiği bozukluklar. Kabul
+/// edilseydi mobilin kendi dışa aktarması masaüstünde TÜMÜYLE reddedilirdi. Yalnız içe aktarmada
+/// denetlenir (depo açılışı gevşek kalır: telefondaki eski veri yüzünden uygulama açılmaz olmasın).
+void _dogrula(Map<String, dynamic> j, Veri dosya) {
+  void tekil(String ad, int ham, int ayristirilan) {
+    if (ham != ayristirilan) throw BicimHatasi('$ad: aynı uid iki kez');
+  }
+
+  List<Object?> ham(String k) => j[k] as List<Object?>; // Veri.fromJson dizi olduğunu doğruladı
+  tekil('calendars', ham('calendars').length, dosya.calendars.length);
+  tekil('events', ham('events').length, dosya.events.length);
+  tekil('tasks', ham('tasks').length, dosya.tasks.length);
+  final hamOverride = ham('events').fold<int>(0, (n, e) => n + ((e as Map<String, dynamic>)['overrides'] as List<Object?>).length);
+  final override = dosya.events.values.fold<int>(0, (n, e) => n + e.overrides.length);
+  if (hamOverride != override) throw BicimHatasi('overrides: aynı örnek iki kez');
+  for (final ev in dosya.events.values) {
+    if (ev.reminders.any((dk) => dk > maksHatirlatici)) {
+      throw BicimHatasi('reminders: en çok $maksHatirlatici dakika (10 yıl) olabilir (${ev.uid})');
+    }
+  }
+  for (final c in dosya.calendars.values) {
+    if (!_renkDesen.hasMatch(c.color)) throw BicimHatasi('color: #rrggbb bekleniyor (${c.name})');
+  }
+  for (final e in dosya.events.values.where((e) => e.rrule != null)) {
+    if (kuralBozuk(e.rrule!, e.tzid)) throw BicimHatasi('rrule çözülemedi (${e.uid}): ${e.rrule}');
+  }
+  for (final e in dosya.events.values.where((e) => e.allDay)) {
+    final loc = konumBul(e.tzid);
+    for (final an in [e.start, e.end]) {
+      final w = utcdenDuvar(loc, an);
+      if (w.hour != 0 || w.minute != 0 || w.second != 0) {
+        throw BicimHatasi('all_day etkinlikte başlangıç/bitiş yerel gece yarısı olmalı (${e.uid})');
+      }
+    }
+  }
+}
+
+/// new_start verilip new_end verilmeyen override'ın bitişi etkinlik süresinden hesaplanıp yazılır
+/// (masaüstü içe aktarmada ve Repo.put_override'da böyle; iki cihazın durumu aynı çıksın).
+void _bitisleriTamamla(Veri dosya) {
+  for (final e in dosya.events.values.toList()) {
+    if (!e.overrides.any((o) => o.newStart != null && o.newEnd == null)) continue;
+    dosya.events[e.uid] = e.copyWith(overrides: [
+      for (final o in e.overrides)
+        o.newStart != null && o.newEnd == null
+            ? EventOverride(
+                originalStart: o.originalStart, cancelled: o.cancelled, newStart: o.newStart,
+                newEnd: o.newStart!.add(e.duration), newTitle: o.newTitle, newLocation: o.newLocation)
+            : o,
+    ]);
+  }
+}
+
 /// `.takvimsync` metnini yerel durumla birleştirir. Aynı dosya ikinci kez
 /// verilirse durum değişmez (idempotent).
 ImportSonucu importEt(Veri yerel, String metin) {
-  final dosya = Veri.fromJson(_ayristir(metin), saat: yerel.saat); // bozuksa burada patlar, v'ye dokunulmadı
+  final j = _ayristir(metin);
+  final dosya = Veri.fromJson(j, saat: yerel.saat); // bozuksa burada patlar, v'ye dokunulmadı
+  _dogrula(j, dosya);
+  _bitisleriTamamla(dosya);
   final v = yerel.kopya();
   final r = ImportRaporu();
 
@@ -139,9 +202,11 @@ void _gorevler(Veri v, Veri dosya, ImportRaporu r) {
 
     var gelen = ft;
     final blok = ft.eventUid;
-    // Blok yerelde yoksa (ya da başka bir görevin bloğuysa) görev plansıza döner;
+    // Blok yerelde yoksa, blok olamayacak etkinlikse (tekrarlı/tüm gün) ya da başka bir görevin
+    // bloğuysa görev plansıza döner (masaüstü `_blok_id` ile aynı);
     // updated_at dosyadaki değer kalır.
-    if (blok != null && (!v.events.containsKey(blok) || v.tasks.values.any((t) => t.uid != ft.uid && t.eventUid == blok))) {
+    final b = blok == null ? null : v.events[blok];
+    if (blok != null && (b == null || b.isRecurring || b.allDay || v.tasks.values.any((t) => t.uid != ft.uid && t.eventUid == blok))) {
       gelen = ft.kopya(plan: (planDay: null, eventUid: null));
     }
     v.tasks[ft.uid] = gelen;
