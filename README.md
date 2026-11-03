@@ -74,9 +74,7 @@ bir şey olmaz. Bozuk dosya ya da uygulamadan yeni bir sürümle yazılmış dos
 reddedilir ve veri hiç değişmez. Dosya biçimi ve birleştirme kuralları masaüstü deposundaki
 [`docs/senkron.md`](https://github.com/tungarix/takvim/blob/master/docs/senkron.md) belgesindedir.
 
-> **Not:** Masaüstü tarafındaki "Telefonla senkron" ekranı Takvim **1.8.0** ile gelecek ve henüz
-> yayımlanmadı (güncel masaüstü sürümü 1.7.2). O zamana kadar bu uygulama tek başına çalışır;
-> `.takvimsync` dosyası yine üretilebilir ve açılabilir.
+> **Not:** Masaüstü tarafı, Takvim **1.8.0** ve sonrasında Ayarlar > "Telefonla senkron" bölümündedir. Daha eski masaüstü sürümleri `.takvimsync` dosyasını tanımaz.
 
 Yalnızca güvendiğin kaynaktan gelen `.takvimsync` dosyalarını aç: dosya içe aktarmadan önce
 doğrulanır ve senin onayını bekler, ama içe aktarılan kayıtlar mevcut verinle birleşir.
