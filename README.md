@@ -1,10 +1,85 @@
 # Takvim (Android)
 
-Takvim'in Android (Flutter) sürümü. Çevrimdışı, hesapsız, ağ erişimi yok (release manifest'inde
-`INTERNET` izni yoktur). Masaüstü sürümüyle `.takvimsync` dosyası üzerinden veri alışverişi yapar;
-biçim ve birleştirme kuralları masaüstü deposundaki `docs/senkron.md` belgesindedir (bağlayıcı).
+> **Takvim (Android)** is an offline, account-free calendar and to-do app for Android, the
+> phone companion of the desktop [Takvim](https://github.com/tungarix/takvim). No internet
+> permission, no server; it exchanges data with the desktop app through a `.takvimsync` file
+> you carry yourself. Turkish UI, sideload-only (APK). Built with Flutter.
+> Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
-Veriler yalnız bu telefonda tutulur (`allowBackup=false`: bulut yedeğine de gitmez).
+> **Durum:** Erken erişim (0.x) · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
+> **Lisans:** MIT · **İndir:** [Son sürüm](https://github.com/tungarix/takvim-mobil/releases/latest) ·
+> **Site:** [aktenak.tech](https://aktenak.tech)
+
+<p>
+  <img src="docs/ekran-hafta.png" alt="Takvim hafta görünümü: üç gün, tüm gün şeridinde bir görev, iki etkinlik (örnek verilerle)" width="260">
+  <img src="docs/ekran-ayarlar.png" alt="Takvim ayarları: takvimler, hatırlatıcı izinleri, masaüstüyle senkron (örnek verilerle)" width="260">
+</p>
+
+Çevrimdışı, hesapsız, ağ erişimi yok (release manifest'inde `INTERNET` izni yoktur). Gün / hafta / ay
+görünümü, görevler, tekrarlı etkinlikler, hatırlatıcılar ve arama var. Verilerin yalnız bu telefonda tutulur
+(`allowBackup=false`: bulut yedeğine de gitmez). Masaüstü Takvim ile `.takvimsync` dosyası aktararak
+senkron çalışır.
+
+## Kurulum (APK)
+
+1. [Releases](https://github.com/tungarix/takvim-mobil/releases) sayfasından `Takvim-X.Y.Z.apk`
+   dosyasını telefonuna indir. İstersen aşağıdaki "İndirmeyi doğrula" adımlarını uygula.
+2. Dosyaya dokun. Android "bilinmeyen kaynaklardan yükleme" izni isterse, tarayıcına/dosya yöneticine
+   bu izni ver ve kurulumu onayla (Play Protect "tanınmayan uygulama" diyebilir: APK Google Play'de
+   yayımlanmıyor, **Yine de yükle**).
+3. İlk hatırlatıcıyı eklediğinde **bildirim** izni istenir (Android 13+). Android 12'de tam zamanlı alarm
+   için Ayarlar'dan "Alarmlar ve hatırlatıcılar" iznini vermen gerekebilir; vermezsen bildirimler
+   yaklaşık zamanda gelir ve Ayarlar'da uyarı görünür.
+
+Tek APK tüm işlemci türlerini içerir (arm64-v8a, armeabi-v7a, x86_64): telefon ve emülatör aynı dosyayı kurar.
+Güncelleme için yeni APK'yı eskisinin üstüne kurman yeterli (aynı anahtarla imzalı, veri korunur).
+
+### İndirmeyi doğrula
+
+Her sürüm GitHub Actions'ta derlenir; ekinde `SHA256SUMS.txt` ve bir build provenance attestation'ı vardır.
+
+```powershell
+# 1) Özet: SHA256SUMS.txt'deki değerle aynı olmalı
+Get-FileHash .\Takvim-0.2.0.apk -Algorithm SHA256
+
+# 2) Dosyanın bu depodan, bu iş akışıyla derlendiği (GitHub CLI gerekir)
+gh attestation verify .\Takvim-0.2.0.apk -R tungarix/takvim-mobil
+
+# 3) İmza sertifikası (Android SDK build-tools'taki apksigner)
+apksigner verify --print-certs Takvim-0.2.0.apk
+```
+
+Sertifika SHA-256 parmak izi, her sürümde aynı olmalı:
+
+```
+SHA256: 5F:34:E5:EA:47:46:F3:55:E6:9D:9A:77:E5:91:EA:EF:29:04:70:34:DD:C5:7C:3F:3E:4B:02:AB:6B:83:71:14
+```
+
+Parmak izi değişirse APK'yı kurma ve [issue aç](https://github.com/tungarix/takvim-mobil/issues).
+Güvenlik sorunu bildirimi için [SECURITY.md](SECURITY.md).
+
+## Masaüstüyle senkron
+
+Ayarlar > **Masaüstüyle senkron**:
+
+1. **Senkron dosyası gönder**: tam durum `takvim-YYYYMMDD-SSDD.takvimsync` olarak sistem Paylaş
+   menüsüne gider (WhatsApp, Drive, e-posta, kablo...). Masaüstünde bu dosyayı içe aktarın.
+2. **Senkron dosyası aç**: dosya seçicisinden `.takvimsync` seçin. Ya da dosya yöneticisinde /
+   WhatsApp'ta / Drive'da dosyaya dokunun ve **Takvim**'i seçin.
+3. Önce **önizleme** çıkar ("N etkinlik, M görev, K silme; mevcut veriyle birleşecek"), onaylarsanız
+   içe aktarılır ve sonuç özeti gösterilir.
+
+Birleştirme güvenlidir: yalnızca daha yeni kayıtlar uygulanır, aynı dosya ikinci kez açılırsa değişen
+bir şey olmaz. Bozuk dosya ya da uygulamadan yeni bir sürümle yazılmış dosya anlaşılır bir mesajla
+reddedilir ve veri hiç değişmez. Dosya biçimi ve birleştirme kuralları masaüstü deposundaki
+[`docs/senkron.md`](https://github.com/tungarix/takvim/blob/master/docs/senkron.md) belgesindedir.
+
+> **Not:** Masaüstü tarafındaki "Telefonla senkron" ekranı Takvim **1.8.0** ile gelecek ve henüz
+> yayımlanmadı (güncel masaüstü sürümü 1.7.2). O zamana kadar bu uygulama tek başına çalışır;
+> `.takvimsync` dosyası yine üretilebilir ve açılabilir.
+
+Yalnızca güvendiğin kaynaktan gelen `.takvimsync` dosyalarını aç: dosya içe aktarmadan önce
+doğrulanır ve senin onayını bekler, ama içe aktarılan kayıtlar mevcut verinle birleşir.
 
 ## Özellikler
 
@@ -23,21 +98,35 @@ Veriler yalnız bu telefonda tutulur (`allowBackup=false`: bulut yedeğine de gi
 - Hatırlatıcılar: yerel bildirim; önümüzdeki 14 gün ve en çok 60 bildirim planlanır, her veri
   değişiminde, açılışta ve arka plandan dönüşte yeniden kurulur, cihaz yeniden başlayınca da yeniden kurulur.
 
-## Masaüstüyle senkron
+## Derleme
 
-Ayarlar > **Masaüstüyle senkron**:
+Gereksinimler: Flutter 3.47 (sabit sürüm `release.yml`'de), JDK 17+, Android SDK (platform 36,
+build-tools 36.0.0), Android cihaz ya da emülatör.
 
-1. **Senkron dosyası gönder**: tam durum `takvim-YYYYMMDD-SSDD.takvimsync` olarak sistem Paylaş
-   menüsüne gider (WhatsApp, Drive, e-posta, kablo...). Masaüstünde bu dosyayı içe aktarın.
-2. **Senkron dosyası aç**: dosya seçicisinden `.takvimsync` seçin. Ya da dosya yöneticisinde /
-   WhatsApp'ta / Drive'da dosyaya dokunun ve **Takvim**'i seçin (uygulama bunun için "Birlikte aç" ve
-   "Paylaş" hedefi olarak kayıtlıdır).
-3. Önce **önizleme** çıkar ("N etkinlik, M görev, K silme; mevcut veriyle birleşecek"), onaylarsanız
-   içe aktarılır ve sonuç özeti ({eklenen, güncellenen, silinen, atlanan}) gösterilir.
+    flutter pub get
+    flutter analyze
+    flutter test
+    flutter run                      # bağlı cihaz/emülatör
+    flutter build apk --debug
+    flutter build apk --release      # yerelde debug anahtarıyla imzalanır: yalnız deneme için
 
-Birleştirme güvenlidir: yalnızca daha yeni kayıtlar uygulanır, aynı dosya ikinci kez açılırsa değişen
-bir şey olmaz. Bozuk dosya ya da uygulamadan yeni bir sürümle yazılmış dosya anlaşılır bir mesajla
-reddedilir ve veri hiç değişmez. Son senkron zamanı Ayarlar'da görünür.
+Gerçek bir NDK'sı olmayan makinede (yalnız `source.properties` olan sahte NDK klasörü gibi) sembol
+soyma adımı çöker; bu durumda `TAKVIM_YEREL_NDKSIZ=1` verilir (APK soyulmadığı için ~170 MB olur):
+
+    TAKVIM_YEREL_NDKSIZ=1 flutter build apk --release                     # bash
+    $env:TAKVIM_YEREL_NDKSIZ='1'; flutter build apk --release             # PowerShell
+
+NDK'lı makinede ve CI'da değişken verilmez; APK ~20-60 MB olur.
+
+**Yayımlanan APK yalnız GitHub Actions'ta (`release.yml`) derlenir ve sürüm anahtarıyla imzalanır.**
+Anahtar depoda değil, secret'larda (`TAKVIM_KEYSTORE_BASE64`, `TAKVIM_KEYSTORE_PASSWORD`); bir kez
+`scripts/imza_anahtari_olustur.ps1` ile oluşturuldu, yedeği depo dışında. Yerelde `TAKVIM_KEYSTORE`
+ve `TAKVIM_KEYSTORE_PASSWORD` verilmezse debug anahtarı kullanılır.
+
+Sürüm çıkarma sırası ve güvenlik incelemesi: [`guvenlik/incelemeler/README.md`](guvenlik/incelemeler/README.md).
+İncelemesi kayıtlı olmayan sürüm derlenmez; kayıtsız yayımlanan release taslağa geri çekilir.
+
+Sürüm tek yerde: `lib/surum.dart` (`test/cekirdek_ek_test.dart` bunun `pubspec.yaml` ile aynı olduğunu doğrular).
 
 ## Masaüstü <-> mobil uçtan uca doğrulama
 
@@ -92,19 +181,6 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
 - `android/` manifest (izinler, `.takvimsync` intent filtreleri, bildirim alıcıları) ve
   `MainActivity.kt` (saat dilimi + gelen dosya köprüsü).
 
-## Kurulum ve derleme
-
-Gereksinimler: Flutter 3.47+, Android SDK (platform 36, build-tools 36.0.0), Android cihaz ya da emülatör.
-
-    flutter pub get
-    flutter analyze
-    flutter test
-    flutter run                      # bağlı cihaz/emülatör
-    flutter build apk --debug
-    flutter build apk --release      # şimdilik debug anahtarıyla imzalanır; yayın imzası bu aşamada yok
-
-Sürüm tek yerde: `lib/surum.dart` (`test/cekirdek_ek_test.dart` bunun `pubspec.yaml` ile aynı olduğunu doğrular).
-
 ## İzinler
 
 - `POST_NOTIFICATIONS` (Android 13+): bildirim göstermek için; ilk hatırlatıcıda istenir, Ayarlar'dan da verilebilir.
@@ -126,6 +202,10 @@ Sürüm tek yerde: `lib/surum.dart` (`test/cekirdek_ek_test.dart` bunun `pubspec
   yalnızca "tekrarsız yap" seçilebilir.
 - Hatırlatıcılar 14 günlük pencerede planlanır; uygulama 14 günden uzun açılmazsa o sürenin
   ötesindeki hatırlatıcılar bir sonraki açılışta kurulur.
+- İçe aktarılan `.takvimsync` dosyası en çok 16 MB olabilir ve bir etkinlikte en çok 5000 istisna
+  (override) kabul edilir; aşan dosya anlaşılır bir mesajla reddedilir ve veri değişmez.
+- Başlangıcından çok uzaktaki saatlik/dakikalık tekrar kuralları (uygulama bunları oluşturmaz, yalnız
+  başka cihazdan gelebilir) uygulamayı kilitlememek için açılmaz, etkinlik tek örnek olarak gösterilir.
 - Yalnız Türkçe arayüz (metinler tek dosyada, çeviriye hazır).
 
 ## Testleri çalıştırma (Windows uyarısı)
@@ -145,6 +225,10 @@ gevşetilmedi; bunun yerine:
 
 Düz `flutter test` bu makinede çoğu zaman çökme yüzünden kırmızı biter; CI'da (çökmenin
 görülmediği ortam) olduğu gibi çalışır.
+
+## Katkı ve güvenlik
+
+[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## Lisans
 

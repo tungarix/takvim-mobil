@@ -10,10 +10,14 @@ android {
     ndkVersion = flutter.ndkVersion
 
     // Uygulamanın kendi yerel kodu yok; .so dosyaları Flutter motorunundur ve zaten hazır gelir.
-    // Sembol ayıklama (NDK'nın llvm-strip'i) atlanır: derleme NDK kurulumuna bağlı kalmasın.
-    packaging {
-        jniLibs {
-            keepDebugSymbols += setOf("**/*.so")
+    // CI'da (ve NDK'lı her makinede) semboller NDK'nın llvm-strip'iyle soyulur: APK ~20-60 MB olur.
+    // Soyma NDK ister; NDK'sı olmayan yerel geliştirme makinesi TAKVIM_YEREL_NDKSIZ=1 ile soymayı
+    // atlar (APK ~170 MB olur, yalnız yerel deneme için; yayın APK'sı hep CI'dan çıkar).
+    if (System.getenv("TAKVIM_YEREL_NDKSIZ") == "1") {
+        packaging {
+            jniLibs {
+                keepDebugSymbols += setOf("**/*.so")
+            }
         }
     }
 
@@ -39,11 +43,27 @@ android {
         versionName = flutter.versionName
     }
 
+    // Sürüm imzası CI'da (release.yml) ortam değişkenlerinden gelir; anahtar depoda yok.
+    // Değişkenler yoksa (yerel geliştirme) debug anahtarı kullanılır: o APK yalnız yerel
+    // deneme içindir, yayımlanan APK'lar hep aynı sürüm anahtarıyla imzalanır ve birbirinin
+    // üstüne kurulur.
+    val surumAnahtari = System.getenv("TAKVIM_KEYSTORE")
+    signingConfigs {
+        if (surumAnahtari != null) {
+            create("surum") {
+                storeFile = file(surumAnahtari)
+                storePassword = System.getenv("TAKVIM_KEYSTORE_PASSWORD")
+                keyAlias = "takvim"
+                keyPassword = System.getenv("TAKVIM_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (surumAnahtari != null) "surum" else "debug"
+            )
         }
     }
 }

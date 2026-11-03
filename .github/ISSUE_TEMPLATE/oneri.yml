@@ -1,0 +1,31 @@
+name: "Öneri"
+description: Yeni bir özellik ya da iyileştirme öner.
+title: "[Öneri]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Uygulama bilerek çevrimdışı ve hesapsız: sunucu, hesap, otomatik bulut senkronu,
+        katılımcı/davet akışı ve CalDAV kapsam dışı. Gerisi tartışmaya açık.
+
+  - type: textarea
+    id: sorun
+    attributes:
+      label: Hangi ihtiyacı ya da sorunu çözüyor?
+    validations:
+      required: true
+
+  - type: textarea
+    id: cozum
+    attributes:
+      label: Önerdiğin çözüm
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatif
+    attributes:
+      label: Düşündüğün alternatifler (opsiyonel)
+    validations:
+      required: false

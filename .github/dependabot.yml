@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # release.yml ve ci.yml'deki actions/* sabitlemeleri güncel kalsın diye. pub
+  # ekosistemi BİLİNÇLİ OLARAK yok: pubspec.lock sabit, dependency_overrides'taki
+  # path_provider_android sınırı elle yönetiliyor, otomatik PR'lar gürültü yapar.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

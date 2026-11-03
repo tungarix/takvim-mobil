@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Yalnız kodu okur.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.5"
+          channel: stable
+
+      - name: Bağımlılıklar
+        run: flutter pub get
+
+      - name: Analiz
+        run: flutter analyze
+
+      - name: Testler
+        run: flutter test

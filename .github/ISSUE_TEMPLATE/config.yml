@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Aktenak
+    url: https://aktenak.tech
+    about: Aktenak projeleri hakkında genel bilgi
+  - name: Masaüstü Takvim
+    url: https://github.com/tungarix/takvim
+    about: Masaüstü (Windows) sürümünün sorunları için bu depo

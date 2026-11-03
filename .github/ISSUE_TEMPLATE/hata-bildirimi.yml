@@ -1,0 +1,63 @@
+name: "Hata bildirimi"
+description: Bir şey beklendiği gibi çalışmıyor.
+title: "[Hata]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Takvim verini, `.takvimsync` dosyanı, e-posta adresini ya da başka kişisel bilgini EKLEME.**
+        Gerekirse uydurma küçük bir örnek yaz. Güvenlik sorunlarını burada değil,
+        [SECURITY.md](https://github.com/tungarix/takvim-mobil/blob/main/SECURITY.md)'deki özel kanaldan bildir.
+
+  - type: dropdown
+    id: surum
+    attributes:
+      label: Takvim sürümü
+      description: Ayarlar ekranının en altında "Sürüm X.Y.Z" olarak yazar (APK dosya adında da var: Takvim-X.Y.Z.apk).
+      options:
+        - v0.2.0
+        - Bilmiyorum
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android sürümü ve cihaz
+      placeholder: "ör. Android 14, Samsung Galaxy A54"
+    validations:
+      required: true
+
+  - type: textarea
+    id: adimlar
+    attributes:
+      label: Tekrar üretme adımları
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: beklenen
+    attributes:
+      label: Beklenen davranış
+    validations:
+      required: true
+
+  - type: textarea
+    id: olan
+    attributes:
+      label: Gerçekleşen davranış
+    validations:
+      required: true
+
+  - type: textarea
+    id: ekran
+    attributes:
+      label: Ekran görüntüsü (opsiyonel)
+      description: Buraya sürükle bırak ya da yapıştır. Kişisel etkinlik adların görünmesin.
+    validations:
+      required: false
