@@ -65,11 +65,11 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** Yalnız tam `https://aktenak.tech/s` kabul edilir (manifest pathPrefix "/s" ile "/shop" da eşleşirdi). */
+    /** Yalnız tam `https://aktenak.tech/s` ve `/s/` kabul edilir (manifest de tam yol eşler: "/sss", "/studyo" değil). */
     private fun baglantiyiVer(uri: Uri) {
         setIntent(Intent())
         val s = uri.toString()
-        if (uri.scheme != "https" || !"aktenak.tech".equals(uri.host, ignoreCase = true) || uri.path != "/s" || uri.port != -1 || s.length > 2048) return
+        if (uri.scheme != "https" || !"aktenak.tech".equals(uri.host, ignoreCase = true) || (uri.path != "/s" && uri.path != "/s/") || uri.port != -1 || s.length > 2048) return
         if (dartHazir && kanal != null) kanal?.invokeMethod("baglantiGeldi", s) else bekleyenBaglanti = s
     }
 

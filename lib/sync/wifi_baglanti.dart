@@ -82,8 +82,9 @@ final _tokenDesen = RegExp(r'^[0-9a-f]{32}$');
 final _parmakDesen = RegExp(r'^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$');
 final _intDesen = RegExp(r'^\d{1,6}$');
 
-// Gösterimde yanıltıcı olabilen yönlendirme/biçim karakterleri (RLO vb.) de temizlenir.
-final _yasakAd = RegExp(r'[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]');
+// Gösterimde yanıltıcı olabilen yönlendirme/biçim karakterleri (RLO vb.) ve görünmez "boşluk" benzerleri
+// (Braille boşluğu, Hangul dolgusu, Arapça işareti...) de temizlenir; geriye bir şey kalmazsa ad boştur.
+final _yasakAd = RegExp(r'[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180e\u2800\u3164\uffa0]');
 
 /// Bağlantıyı ayrıştırır ve doğrular; geçersizse [WifiBaglantiHatasi] fırlatır.
 WifiBaglanti wifiBaglantiAyristir(String girdi) {
@@ -96,8 +97,9 @@ WifiBaglanti wifiBaglantiAyristir(String girdi) {
   }
   final i = s.indexOf('#');
   if (i < 0 || s.indexOf('#', i + 1) >= 0) throw bicimsiz;
-  // Şema https, ana makine TAM aktenak.tech, yol TAM /s; kullanıcı bilgisi, port, sorgu yok.
-  if (s.substring(0, i).toLowerCase() != 'https://aktenak.tech/s') throw bicimsiz;
+  // Şema https, ana makine TAM aktenak.tech, yol TAM /s (site /s/ olarak da servis eder: o da kabul);
+  // kullanıcı bilgisi, port, sorgu yok.
+  if (!const {'https://aktenak.tech/s', 'https://aktenak.tech/s/'}.contains(s.substring(0, i).toLowerCase())) throw bicimsiz;
 
   final alan = <String, String>{};
   for (final parca in s.substring(i + 1).split('&')) {

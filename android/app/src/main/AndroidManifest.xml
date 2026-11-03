@@ -62,7 +62,8 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="aktenak.tech" android:pathPrefix="/s"/>
+                <data android:scheme="https" android:host="aktenak.tech" android:path="/s"/>
+                <data android:scheme="https" android:host="aktenak.tech" android:path="/s/"/>
             </intent-filter>
             <!-- Paylaş menüsünden: uzantı süzülemez, bu yüzden yalnız belirsiz-ikili ve kendi mime türümüz. -->
             <intent-filter>

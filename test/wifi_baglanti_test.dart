@@ -44,6 +44,10 @@ void main() {
       expect(wifiBaglantiAyristir(baglanti(ana: 'HTTPS://Aktenak.Tech/s')).port, 51734);
     });
 
+    test('site /s/ olarak da servis eder: bağlantı /s ve /s/ ile kabul', () {
+      expect(wifiBaglantiAyristir(baglanti(ana: 'https://aktenak.tech/s/')).port, 51734);
+    });
+
     test('özel ve yerel aralıkların sınırları', () {
       for (final ip in ['10.0.0.1', '10.255.255.255', '172.16.0.1', '172.31.255.255', '192.168.0.1', '192.168.255.254', '169.254.1.1']) {
         expect(hata(baglanti(h: '$ip:1')), isNull, reason: ip);
@@ -77,7 +81,10 @@ void main() {
       'port': baglanti(ana: 'https://aktenak.tech:443/s'),
       'sondaki nokta': baglanti(ana: 'https://aktenak.tech./s'),
       'başka yol': baglanti(ana: 'https://aktenak.tech/x'),
-      'yol uzantısı': baglanti(ana: 'https://aktenak.tech/s/'),
+      'yol çift eğik çizgi': baglanti(ana: 'https://aktenak.tech/s//'),
+      'yol alt yolu': baglanti(ana: 'https://aktenak.tech/s/x'),
+      'yol sss': baglanti(ana: 'https://aktenak.tech/sss'),
+      'yol studyo': baglanti(ana: 'https://aktenak.tech/studyo/'),
       'yol uzun': baglanti(ana: 'https://aktenak.tech/shop'),
       'kodlanmış yol': baglanti(ana: 'https://aktenak.tech/%73'),
       'sorgu': baglanti(ana: 'https://aktenak.tech/s?x=1'),
@@ -198,6 +205,23 @@ void main() {
       expect(ad('PC%E2%80%AEfdp.exe'), 'PCfdp.exe'); // U+202E (RLO) gösterimi tersine çevirirdi
       expect(ad('a%E2%80%8Bb%EF%BB%BFc'), 'abc'); // sıfır genişlikli boşluk, BOM
       expect(ad('%C2%85x'), 'x'); // C1 kontrol (NEL)
+    });
+
+    test('görünmez karakterler temizlenir; yalnız onlardan oluşan ad boş sayılır (Bilinmeyen cihaz)', () {
+      // U+061C ALM, U+180E, U+2800 Braille boşluğu, U+3164 Hangul dolgusu, U+FFA0, U+00AD
+      for (final k in ['%D8%9C', '%E1%A0%8E', '%E2%A0%80', '%E3%85%A4', '%EF%BE%A0', '%C2%AD', '%CD%8F']) {
+        expect(ad('a${k}b'), 'ab', reason: k);
+        expect(ad(k * 5), '', reason: k);
+      }
+      expect(ad('%E2%A0%80%E3%85%A4%EF%BE%A0%20'), '');
+      expect(M.wifiCihaz(ad('%E2%A0%80%E3%85%A4'), '10.0.0.5:5000'), 'Bilinmeyen cihaz (10.0.0.5:5000)');
+      expect(M.wifiOnayMetni('', '10.0.0.5:5000'), contains('Bilinmeyen cihaz (10.0.0.5:5000) ile eşleşilecek'));
+    });
+
+    test('ikinci onay metni karsi cihazin adini ve IP:port bilgisini tekrar eder', () {
+      final m = M.wifiOnizlemeNot('Arda PC', '192.168.1.20:51734');
+      expect(m, contains('«Arda PC» (192.168.1.20:51734)'));
+      expect(M.wifiOnizlemeNot('', '10.0.0.5:5000'), contains('Bilinmeyen cihaz (10.0.0.5:5000)'));
     });
 
     test('baştaki/sondaki boşluk kırpılır; bozuk yüzde kodu adı boşaltır ama bağlantıyı düşürmez', () {
