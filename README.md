@@ -1,9 +1,10 @@
 # Takvim (Android)
 
 > **Takvim (Android)** is an offline, account-free calendar and to-do app for Android, the
-> phone companion of the desktop [Takvim](https://github.com/tungarix/takvim). No internet
-> permission, no server; it exchanges data with the desktop app through a `.takvimsync` file
-> you carry yourself. Turkish UI, sideload-only (APK). Built with Flutter.
+> phone companion of the desktop [Takvim](https://github.com/tungarix/takvim). No server, no cloud;
+> it syncs with the desktop app through a `.takvimsync` file you carry yourself, or directly over the
+> same Wi-Fi network (the only use of the `INTERNET` permission). Turkish UI, sideload-only (APK).
+> Built with Flutter.
 > Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
 > **Durum:** Erken erişim (0.x) · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
@@ -15,10 +16,11 @@
   <img src="docs/ekran-ayarlar.png" alt="Takvim ayarları: takvimler, hatırlatıcı izinleri, masaüstüyle senkron (örnek verilerle)" width="260">
 </p>
 
-Çevrimdışı, hesapsız, ağ erişimi yok (release manifest'inde `INTERNET` izni yoktur). Gün / hafta / ay
+Hesapsız, bulutsuz, sunucusuz. İnternete bağlanmaz: `INTERNET` izni yalnız aynı Wi-Fi ağındaki masaüstüyle
+**Wi-Fi ile eşleştirme** için var (aşağıda). Gün / hafta / ay
 görünümü, görevler, tekrarlı etkinlikler, hatırlatıcılar ve arama var. Verilerin yalnız bu telefonda tutulur
-(`allowBackup=false`: bulut yedeğine de gitmez). Masaüstü Takvim ile `.takvimsync` dosyası aktararak
-senkron çalışır.
+(`allowBackup=false`: bulut yedeğine de gitmez). Masaüstü Takvim ile `.takvimsync` dosyası aktararak ya da
+aynı Wi-Fi'da QR ile eşleşerek senkron çalışır.
 
 ## Kurulum (APK)
 
@@ -78,6 +80,40 @@ reddedilir ve veri hiç değişmez. Dosya biçimi ve birleştirme kuralları mas
 
 Yalnızca güvendiğin kaynaktan gelen `.takvimsync` dosyalarını aç: dosya içe aktarmadan önce
 doğrulanır ve senin onayını bekler, ama içe aktarılan kayıtlar mevcut verinle birleşir.
+
+## Wi-Fi ile eşleştirme (aynı ağdaki masaüstüyle doğrudan senkron)
+
+Dosya taşımadan, telefon ve bilgisayar **aynı Wi-Fi ağındayken** (Wi-Fi eşleştirmeyi içeren bir masaüstü Takvim sürümü gerekir):
+
+1. Bilgisayarda Takvim > Ayarlar > Telefonla senkron > **"Wi-Fi ile eşleştir"**: QR kod ve aynı bağlantının
+   metni çıkar (en çok 3 dakika geçerli).
+2. Telefonun **kamera uygulamasıyla** QR'ı okut ve açılan bağlantıyı Takvim ile aç. Uygulamada QR tarayıcı
+   yok (kamera izni de yok). Bağlantı açılmazsa Ayarlar > Masaüstüyle senkron > **Wi-Fi ile eşleştir**
+   sayfasındaki alana bağlantı metnini yapıştır.
+3. **1. onay:** "«bilgisayar adı» (IP) ile eşleşilecek" ekranı. Bunu bilgisayarındaki eşleştirme ekranından
+   aldıysan **Bağlan**. Onaylamadan ağ isteği yapılmaz.
+4. Takvim bilgisayarın durumunu alır ve **önizleme** gösterir. **2. onay: "Birleştir ve gönder"**: değişiklikler
+   telefona işlenir, ardından telefonun tam durumu bilgisayara gönderilir; bilgisayar da kendi ekranında onay
+   ister. Vazgeçersen hiçbir veri gönderilmez ve telefon verisi değişmez.
+5. İki rapor gösterilir (telefona / bilgisayara: eklenen, güncellenen, silinen, atlanan). Bildirimler yeniden
+   kurulur, "Son senkron" güncellenir.
+
+Protokol ve tehdit modeli masaüstü deposunda:
+[`docs/senkron-wifi.md`](https://github.com/tungarix/takvim/blob/master/docs/senkron-wifi.md).
+
+**İnternet izni neden var, ne yapıyor?** `INTERNET` izni (Android'de yerel ağ bağlantısı da bu izne bağlıdır)
+yalnız bu özellik için eklendi. Yalnız sen bir eşleştirme bağlantısını onaylayınca, o bağlantıdaki **özel/yerel
+IPv4** adrese (10/8, 172.16/12, 192.168/16, 169.254/16) HTTPS ile bağlanır; genel IP, IPv6 ve ana makine
+adları reddedilir, iki kez denetlenir. Özellik kullanılmıyorken hiçbir ağ isteği yoktur; telemetri, güncelleme
+denetimi, bulut yok. Düz HTTP kapalıdır (`usesCleartextTraffic=false`). Bağlantı, masaüstünün o oturum için
+ürettiği kendi imzalı sertifikanın **SHA-256 parmak iziyle sabitlenir** (sistem güven deposuna güvenilmez,
+parmak izi uyuşmazsa bağlantı kesilir ve güvenlik uyarısı çıkar), TLS 1.2+ şart, kimlik 128 bit tek kullanımlık
+token'dır. `https://aktenak.tech/s` bağlantısı için bir Android App Link filtresi vardır; bağlantı uygulamayı
+yalnız **onay ekranına** götürür, kendiliğinden bağlanmaz.
+
+Çalışmazsa: aynı Wi-Fi'da olduğunu, bilgisayardaki eşleştirme ekranının hâlâ açık olduğunu ve ağın cihazları
+birbirinden ayırmadığını (misafir ağlar bunu yapabilir) kontrol et. **Yedek yol** her zaman dosya aktarmadır
+(yukarıdaki "Masaüstüyle senkron").
 
 ## Özellikler
 
@@ -156,6 +192,10 @@ uid kümeleri, bütün alanlar, silinenler, ve tekrar açılımı pencereleri):
 - **f** bozuk/eksik/yanlış tipli/yinelenen uid'li/yeni sürümlü/farklı uzantılı/BOM'lu dosyalar: iki taraf
   anlaşılır hata verir ve veri hiç değişmez; geçerli ama farklı biçimli dosyalar iki tarafta aynı sonucu verir.
 
+`tool/e2e/wifi_istemci_testi.dart` (`dart run`) Wi-Fi istemcisini yerel (loopback) gerçek bir TLS sunucusuna karşı
+sınar: parmak izi doğru/yanlış, token, 401/403/408/400 eşlemesi, 16 MiB sınırı, yönlendirme, zaman aşımı. Sınama
+sertifikası `test/fixtures/wifi-test-*.pem` (yalnız test; dosyanın başındaki openssl komutuyla üretilir).
+
 `tool/e2e/mobil_regresyon.dart` (`dart run`) e2e'nin bulduğu mobil hatalar için saf Dart regresyon
 denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` tablosunu üretir
 (`timezone` paketinin bilmediği IANA takma adları: `UTC`, `Europe/Amsterdam`, `Asia/Calcutta`...).
@@ -168,7 +208,9 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
   kuralları (`veri.dart`).
 - `lib/store/` kalıcılık: tek JSON dosyası, atomik yazma, bozulmada son sağlam yedeğe dönüş
   (`takvim_store.dart`); küçük cihaz ayarları (`ayarlar.dart`).
-- `lib/sync/` `export.dart` (tam durum) ve `import.dart` (birleştirme, rapor).
+- `lib/sync/` `export.dart` (tam durum) ve `import.dart` (birleştirme, rapor); `wifi_baglanti.dart`
+  (eşleştirme bağlantısı ayrıştırıcı/doğrulayıcı) ve `wifi_istemci.dart` (sertifika sabitlemeli HTTPS
+  istemcisi); ikisi de saf Dart.
 - `lib/platform/` Android'e bağlanan ince katman: bildirimler, dosya seç/paylaş, MainActivity köprüsü.
 - `lib/app/kontrol.dart` tek durum nesnesi (ChangeNotifier); tüm yazmalar `yap` kapısından geçer.
 - `lib/ui/` ekranlar (ekran başına bir dosya). Tüm arayüz metinleri `lib/ui/metin.dart`'ta
@@ -176,8 +218,8 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
 - `test/` birim ve widget testleri; `test/uyum_test.dart` ve `test/uyum_masaustu_test.dart` açılımı
   masaüstü çıktısıyla (fixture) birebir karşılaştırır. `tool/uyum_uret.py` uyum fixture'ını
   masaüstü açıcısından üretir (masaüstü deposu okunur, değişmez).
-- `android/` manifest (izinler, `.takvimsync` intent filtreleri, bildirim alıcıları) ve
-  `MainActivity.kt` (saat dilimi + gelen dosya köprüsü).
+- `android/` manifest (izinler, `.takvimsync` intent filtreleri, Wi-Fi App Link filtresi, bildirim alıcıları) ve
+  `MainActivity.kt` (saat dilimi + gelen dosya ve bağlantı köprüsü).
 
 ## İzinler
 
@@ -185,6 +227,8 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
 - `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` (yalnız Android 12): hatırlatıcı tam zamanında çalsın.
   İzin yoksa uygulama çökmez, bildirimler yaklaşık zamanda gelir ve Ayarlar'da uyarı görünür.
 - `RECEIVE_BOOT_COMPLETED`: cihaz yeniden başlayınca alarmlar yeniden kurulsun.
+- `INTERNET` (0.3.0'dan beri): yalnız "Wi-Fi ile eşleştir"; aynı ağdaki masaüstüne HTTPS (yukarıdaki bölüm).
+  `CAMERA` izni YOK: QR'ı telefonun kamera uygulaması okur.
 
 ## Bilinen sınırlar
 

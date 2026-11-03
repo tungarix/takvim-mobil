@@ -1,10 +1,13 @@
 # Güvenlik Politikası
 
-Takvim (Android) çevrimdışı bir uygulamadır: sunucu yok, hesap yok, ağ erişimi yok (release
-manifest'inde `INTERNET` izni yoktur). Verin yalnız telefonundaki uygulama klasöründe durur ve bulut
-yedeğine gitmez (`allowBackup=false`). Bu saldırı yüzeyini küçültür ama sıfırlamaz: uygulama
-dışarıdan gelen `.takvimsync` dosyalarını okur (dosya seçici, "Birlikte aç", Paylaş menüsü), yerel
-bildirim kurar ve dosyayı sistem Paylaş menüsüne verir.
+Takvim (Android) hesapsız ve sunucusuz çalışır; internete bağlanmaz. `INTERNET` izni yalnız
+"Wi-Fi ile eşleştir" özelliği içindir: yalnız sen başlatınca, aynı yerel ağdaki (özel IP adresli)
+masaüstü Takvim'e, sertifika parmak iziyle sabitlenmiş HTTPS ile bağlanır; başka hiçbir ağ isteği yoktur
+(ayrıntı README'de). Verin yalnız telefonundaki uygulama klasöründe durur ve bulut yedeğine gitmez
+(`allowBackup=false`). Bu saldırı yüzeyini küçültür ama sıfırlamaz: uygulama dışarıdan gelen
+`.takvimsync` dosyalarını okur (dosya seçici, "Birlikte aç", Paylaş menüsü) ve eşleştirme
+bağlantılarını (`https://aktenak.tech/s#...`, yalnız onay ekranını açar), yerel bildirim kurar ve
+dosyayı sistem Paylaş menüsüne verir.
 
 ## Desteklenen sürümler
 
