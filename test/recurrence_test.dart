@@ -109,8 +109,19 @@ void main() {
     expect(baslangiclar(e, '2026-11-11T00:00:00Z', '2026-11-12T00:00:00Z'), isEmpty);
   });
 
-  test('desteklenmeyen kural (WKST=SU) çökmez, tek örneğe düşer', () {
-    final e = ev('e', g, baslangic: '2026-11-02T07:00:00Z', bitis: '2026-11-02T08:00:00Z', rrule: 'FREQ=WEEKLY;WKST=SU;BYDAY=MO');
+  test('sonucu değiştirmeyen WKST=SU atılır, kural normal açılır (Google .ics WKST=SU yazar)', () {
+    final e = ev('e', g, baslangic: '2026-11-02T07:00:00Z', bitis: '2026-11-02T08:00:00Z', rrule: 'FREQ=WEEKLY;WKST=SU;BYDAY=MO;COUNT=3');
+    expect(baslangiclar(e, '2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z'),
+        ['2026-11-02T07:00:00Z', '2026-11-09T07:00:00Z', '2026-11-16T07:00:00Z']);
+  });
+
+  test('kural metni büyük/küçük harf duyarsız (RFC 5545, dateutil gibi)', () {
+    final e = ev('e', g, baslangic: '2026-11-02T07:00:00Z', bitis: '2026-11-02T08:00:00Z', rrule: 'freq=weekly;count=2');
+    expect(baslangiclar(e, '2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z'), ['2026-11-02T07:00:00Z', '2026-11-09T07:00:00Z']);
+  });
+
+  test('sonucu DEĞİŞTİREN WKST=SU (aralıklı haftalık) desteklenmez: çökmez, tek örneğe düşer', () {
+    final e = ev('e', g, baslangic: '2026-11-02T07:00:00Z', bitis: '2026-11-02T08:00:00Z', rrule: 'FREQ=WEEKLY;INTERVAL=2;WKST=SU;BYDAY=MO');
     expect(baslangiclar(e, '2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z'), ['2026-11-02T07:00:00Z']);
   });
 

@@ -228,7 +228,8 @@ void main() {
 
   test('cihaz saat dilimi yedekleri tz veritabanında var (main.dart GMT cihazlarda Etc/UTC kullanır)', () {
     expect(YerelZaman('Etc/UTC').duvar(t('2026-11-03T10:00:00Z')), DateTime.utc(2026, 11, 3, 10));
-    expect(() => YerelZaman('GMT'), throwsFormatException);
+    expect(YerelZaman('GMT').duvar(t('2026-11-03T10:00:00Z')), DateTime.utc(2026, 11, 3, 10)); // takma ad tablosu (tz_takma_adlar.dart)
+    expect(() => YerelZaman('Mars/Phobos'), throwsFormatException);
   });
 
   test('sürüm sabiti pubspec.yaml ile aynı', () {
