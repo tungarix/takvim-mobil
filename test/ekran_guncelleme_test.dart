@@ -199,6 +199,19 @@ void main() {
       expect(find.textContaining('farklı bir anahtarla imzalı'), findsOneWidget);
     });
 
+    testWidgets('çok hızlı hata: ilerleme penceresi açık kalmaz', (tester) async {
+      final (_, kopru, ag) = await hazir(tester, ag: SahteAg(teklif: SahteAg.yayin('0.4.0', 2048))..metinHatasi = const GuncellemeHatasi('ag_hatasi'));
+      await tester.tap(find.text('0.4.0 sürümünü kur'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('İndir ve kur'));
+      await metniBekle(tester, find.textContaining('ulaşılamadı'));
+      await tester.pumpAndSettle();
+      expect(find.text('Güncelleme indiriliyor ve doğrulanıyor…'), findsNothing); // pencere kapandı
+      expect(find.textContaining('ulaşılamadı'), findsWidgets);
+      expect(ag.indirmeler, 0);
+      expect(kopru.kurulanlar, isEmpty);
+    });
+
     testWidgets('özet tutmazsa kurulum penceresi HİÇ açılmaz', (tester) async {
       final (_, kopru, ag) = await hazir(tester, ag: SahteAg(teklif: SahteAg.yayin('0.4.0', 2048), ozetYanlis: true));
       await tester.tap(find.text('0.4.0 sürümünü kur'));

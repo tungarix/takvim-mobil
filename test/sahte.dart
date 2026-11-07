@@ -163,6 +163,9 @@ class SahteAg extends Ag {
   GuncellemeHatasi? hata;
   final List<int> apk;
   bool ozetYanlis;
+
+  /// Verilirse özet indirmesi ANINDA bu hatayla biter (ilk kareden önce: ilerleme penceresi yarışı).
+  GuncellemeHatasi? metinHatasi;
   var denetimler = 0;
   var indirmeler = 0;
 
@@ -182,7 +185,12 @@ class SahteAg extends Ag {
   }
 
   @override
-  Future<String> metinIndir(String url) async =>
+  Future<String> metinIndir(String url) async {
+    if (metinHatasi != null) throw metinHatasi!;
+    return _ozetMetni();
+  }
+
+  String _ozetMetni() =>
       '${ozetYanlis ? '0' * 64 : onaltilik(sha256(apk))}  Takvim-${teklif!.surum}.apk\n';
 
   @override

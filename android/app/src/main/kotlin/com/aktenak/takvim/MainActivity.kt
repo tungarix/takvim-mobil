@@ -42,8 +42,11 @@ class MainActivity : FlutterActivity() {
         if (savedInstanceState == null) dosyayiOku(intent)
     }
 
+    // Yalnız KENDİ dinleyicimizi sil: ikinci bir MainActivity örneği ayarlamış olabilir.
+    private var benimDinleyici: ((Int, String?) -> Unit)? = null
+
     override fun onDestroy() {
-        KurulumAlici.sonucDinleyici = null
+        if (KurulumAlici.sonucDinleyici === benimDinleyici) KurulumAlici.sonucDinleyici = null
         super.onDestroy()
     }
 
@@ -54,9 +57,11 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        KurulumAlici.sonucDinleyici = { durum, mesaj ->
+        val dinleyici: (Int, String?) -> Unit = { durum, mesaj ->
             runOnUiThread { kanal?.invokeMethod("kurulumSonucu", mapOf("durum" to durum, "mesaj" to mesaj)) }
         }
+        benimDinleyici = dinleyici
+        KurulumAlici.sonucDinleyici = dinleyici
         kanal = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.aktenak.takvim/kopru").also { k ->
             k.setMethodCallHandler { cagri, sonuc ->
                 when (cagri.method) {
@@ -100,6 +105,7 @@ class MainActivity : FlutterActivity() {
 
     private fun apkKur(yol: String?, sonuc: MethodChannel.Result) {
         var oturumNo = -1
+        var commitEdildi = false
         try {
             require(yol != null) { "yol yok" }
             val dosya = File(yol).canonicalFile
@@ -128,10 +134,12 @@ class MainActivity : FlutterActivity() {
                 val niyet = Intent(this, KurulumAlici::class.java)
                 val bayrak = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
                 oturum.commit(PendingIntent.getBroadcast(this, id, niyet, bayrak).intentSender)
+                commitEdildi = true
             }
             sonuc.success(null)
         } catch (e: Exception) {
-            if (oturumNo >= 0) try { packageManager.packageInstaller.abandonSession(oturumNo) } catch (_: Exception) {}
+            // commit sonrası oturum kullanıcının onay ekranında olabilir: yalnız commit öncesi hatada iptal et.
+            if (oturumNo >= 0 && !commitEdildi) try { packageManager.packageInstaller.abandonSession(oturumNo) } catch (_: Exception) {}
             sonuc.error("kurulum", e.message ?: e.javaClass.simpleName, null)
         }
     }
