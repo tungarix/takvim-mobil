@@ -1,4 +1,5 @@
 """Güncelleme denemesi için sahte GitHub (yalnız geliştirme). Kullanım ve yöntem: docs/guncelleme-deneme.md"""
+import hashlib
 import http.server
 import json
 import pathlib
