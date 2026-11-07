@@ -8,7 +8,7 @@
 > Built with Flutter.
 > Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
-> **Durum:** Erken erişim (0.x), son sürüm 0.3.0 · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
+> **Durum:** Erken erişim (0.x), son sürüm 0.4.0 · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
 > **Lisans:** MIT · **İndir:** [Son sürüm](https://github.com/tungarix/takvim-mobil/releases/latest) ·
 > **Site:** [aktenak.tech](https://aktenak.tech)
 
@@ -45,13 +45,13 @@ Her sürüm GitHub Actions'ta derlenir; ekinde `SHA256SUMS.txt` ve bir build pro
 
 ```powershell
 # 1) Özet: SHA256SUMS.txt'deki değerle aynı olmalı
-Get-FileHash .\Takvim-0.3.0.apk -Algorithm SHA256
+Get-FileHash .\Takvim-0.4.0.apk -Algorithm SHA256
 
 # 2) Dosyanın bu depodan, bu iş akışıyla derlendiği (GitHub CLI gerekir)
-gh attestation verify .\Takvim-0.3.0.apk -R tungarix/takvim-mobil
+gh attestation verify .\Takvim-0.4.0.apk -R tungarix/takvim-mobil
 
 # 3) İmza sertifikası (Android SDK build-tools'taki apksigner)
-apksigner verify --print-certs Takvim-0.3.0.apk
+apksigner verify --print-certs Takvim-0.4.0.apk
 ```
 
 Sertifika SHA-256 parmak izi, her sürümde aynı olmalı:
@@ -139,6 +139,11 @@ veri göndermez. Yeni sürüm varsa Ayarlar → Güncellemeler'de görünür ve 
 
 ## Sürüm notları
 
+- **0.4.0**: **isteğe bağlı otomatik güncelleme** (yukarıdaki "Güncellemeler"; ilk açılışta tek seferlik soru, seçmeden ağ
+  isteği yok, kurmadan önce her zaman onay, varsayılan yalnız Wi-Fi'da indirme, SHA-256 doğrulaması, sistemin kurulum
+  penceresi, Android imza denetimi), **Görünüm** seçeneği (Ayarlar → Sistem / Koyu / Açık; yeni koyu-mercan kimlik ve
+  "Kâğıt" açık paleti), yeni uygulama ikonu. Yeni izinler: `REQUEST_INSTALL_PACKAGES`, `ACCESS_NETWORK_STATE`.
+  **0.3.0 ve öncesi bu sürüme bir kez elle güncellenir.** Güvenlik incelemesi: [`guvenlik/incelemeler/v0.4.0.md`](guvenlik/incelemeler/v0.4.0.md).
 - **0.3.0**: aynı Wi-Fi'daki masaüstü Takvim 1.9.0+ ile **Wi-Fi eşleştirme** (QR ya da bağlantı metni, iki onay,
   sertifika parmak iziyle sabitlenmiş HTTPS; yedek yol hâlâ dosya aktarma). Yeni izin: yalnız `INTERNET`.
   Güvenlik incelemesi: [`guvenlik/incelemeler/v0.3.0.md`](guvenlik/incelemeler/v0.3.0.md).
