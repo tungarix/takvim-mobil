@@ -1,7 +1,9 @@
 // Güncelleme mantığının SAF kısmı: sürüm karşılaştırma, release çözümleme, özet ayrıştırma.
 // Ağ ve dosya yok; kurallar masaüstü uygulamayla (takvim/guncelleme/saf.py) aynıdır ve
 // takvim/docs/guncelleme.md'de yazılıdır. Güvenlik kararları (hangi adres, hangi ad, hangi boyut) burada.
-const apkEnFazlaBayt = 150 * 1024 * 1024;
+/// Kabul edilen en büyük APK. Yayın ~60 MB; sınır aşırı büyük (bozuk/kötü niyetli) dosyayı ayıklar.
+/// `--dart-define=GUNCELLEME_MAKS_BAYT` yalnız geliştirme/uçtan uca denemede (sembolü temizlenmemiş APK büyük olur).
+const apkEnFazlaBayt = int.fromEnvironment('GUNCELLEME_MAKS_BAYT', defaultValue: 150 * 1024 * 1024);
 
 /// Yalnızca GitHub: API, release sayfası ve varlıkların yönlendirildiği depolama.
 const izinliSunucular = {
