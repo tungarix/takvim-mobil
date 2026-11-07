@@ -3,7 +3,8 @@
 > **Takvim (Android)** is an offline, account-free calendar and to-do app for Android, the
 > phone companion of the desktop [Takvim](https://github.com/tungarix/takvim). No server, no cloud;
 > it syncs with the desktop app through a `.takvimsync` file you carry yourself, or directly over the
-> same Wi-Fi network (the only use of the `INTERNET` permission). Turkish UI, sideload-only (APK).
+> same Wi-Fi network. `INTERNET` is used only for that and for the optional update check (off until you choose it).
+> Turkish UI, sideload-only (APK).
 > Built with Flutter.
 > Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
@@ -16,8 +17,9 @@
   <img src="docs/ekran-ayarlar.png" alt="Takvim ayarları: takvimler, hatırlatıcı izinleri, masaüstüyle senkron (örnek verilerle)" width="260">
 </p>
 
-Hesapsız, bulutsuz, sunucusuz. İnternet servislerine bağlanmaz: `INTERNET` izni yalnız aynı Wi-Fi ağındaki
-masaüstüyle **Wi-Fi ile eşleştirme** için var (aşağıda); eşleştirme kullanılmıyorken hiçbir ağ isteği yapılmaz.
+Hesapsız, bulutsuz, sunucusuz. `INTERNET` izni yalnız iki şey için var: aynı Wi-Fi ağındaki masaüstüyle
+**Wi-Fi ile eşleştirme** ve **isteğe bağlı güncelleme denetimi** (ikisi de aşağıda). İkisi de kullanılmıyorken
+hiçbir ağ isteği yapılmaz; güncelleme denetimi sen "evet" demeden hiç çalışmaz.
 Gün / hafta / ay
 görünümü, görevler, tekrarlı etkinlikler, hatırlatıcılar ve arama var. Verilerin yalnız bu telefonda tutulur
 (`allowBackup=false`: bulut yedeğine de gitmez). Masaüstü Takvim ile `.takvimsync` dosyası aktararak ya da
@@ -105,8 +107,8 @@ Protokol ve tehdit modeli masaüstü deposunda:
 **İnternet izni neden var, ne yapıyor?** `INTERNET` izni (Android'de yerel ağ bağlantısı da bu izne bağlıdır)
 yalnız bu özellik için eklendi. Yalnız sen bir eşleştirme bağlantısını onaylayınca, o bağlantıdaki **özel/yerel
 IPv4** adrese (10/8, 172.16/12, 192.168/16, 169.254/16) HTTPS ile bağlanır; genel IP, IPv6 ve ana makine
-adları reddedilir, iki kez denetlenir. Özellik kullanılmıyorken hiçbir ağ isteği yoktur; telemetri, güncelleme
-denetimi, bulut yok. Düz HTTP kapalıdır (`usesCleartextTraffic=false`). Bağlantı, masaüstünün o oturum için
+adları reddedilir, iki kez denetlenir. Özellik kullanılmıyorken hiçbir ağ isteği yoktur; telemetri, bulut yok
+(güncelleme denetimi ayrı ve isteğe bağlıdır: aşağıdaki "Güncellemeler"). Düz HTTP kapalıdır (`usesCleartextTraffic=false`). Bağlantı, masaüstünün o oturum için
 ürettiği kendi imzalı sertifikanın **SHA-256 parmak iziyle sabitlenir** (sistem güven deposuna güvenilmez,
 parmak izi uyuşmazsa bağlantı kesilir ve güvenlik uyarısı çıkar), TLS 1.2+ şart, kimlik 128 bit tek kullanımlık
 token'dır. `https://aktenak.tech/s` bağlantısı için bir Android App Link filtresi vardır; bağlantı uygulamayı
@@ -115,6 +117,22 @@ yalnız **onay ekranına** götürür, kendiliğinden bağlanmaz.
 Çalışmazsa: aynı Wi-Fi'da olduğunu, bilgisayardaki eşleştirme ekranının hâlâ açık olduğunu ve ağın cihazları
 birbirinden ayırmadığını (misafir ağlar bunu yapabilir) kontrol et. **Yedek yol** her zaman dosya aktarmadır
 (yukarıdaki "Masaüstüyle senkron").
+
+## Güncellemeler (isteğe bağlı)
+
+İlk açılışta bir kez **"Yeni sürümler otomatik denetlensin mi?"** diye sorulur; bu soruyu yanıtlamadan ağ isteği
+yapılmaz (geri tuşu soruyu kapatmaz). **Evet** dersen Takvim günde en çok bir kez yalnızca GitHub'a
+(`api.github.com/repos/tungarix/takvim-mobil/releases/latest`) "son sürüm nedir" diye sorar; hesap, kimlik ya da
+veri göndermez. Yeni sürüm varsa Ayarlar → Güncellemeler'de görünür ve **kurmadan önce her zaman sana sorar**.
+
+- İndirme varsayılan olarak **yalnız Wi-Fi'da**; mobil/ölçülü ağda ayrıca onay istenir.
+- APK'nın SHA-256'sı yayındaki `SHA256SUMS.txt`'le eşleşmezse kurulum iptal olur ve dosya silinir.
+- Kurulumu sistemin kendi penceresi yapar. Android, **farklı anahtarla imzalı bir APK'yı asla kurmaz**: asıl
+  koruma budur (imza anahtarı kaybedilirse güncelleme zinciri kopar). Başka bir uygulama kurulmaz.
+- Android "Bu kaynaktan yüklemeye izin ver" ayarını ister; uygulama seni o ekrana götürür.
+- Yeni izinler: `REQUEST_INSTALL_PACKAGES` (yalnız bu kurulum için) ve `ACCESS_NETWORK_STATE` (ağın Wi-Fi mi mobil
+  veri mi olduğunu anlamak için).
+- Bu özellikten önceki sürümler (≤ 0.3.0) ilk güncellemeyi bir kez elle yapar.
 
 ## Sürüm notları
 
@@ -251,7 +269,11 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
 - `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` (yalnız Android 12): hatırlatıcı tam zamanında çalsın.
   İzin yoksa uygulama çökmez, bildirimler yaklaşık zamanda gelir ve Ayarlar'da uyarı görünür.
 - `RECEIVE_BOOT_COMPLETED`: cihaz yeniden başlayınca alarmlar yeniden kurulsun.
-- `INTERNET` (0.3.0'dan beri): yalnız "Wi-Fi ile eşleştir"; aynı ağdaki masaüstüne HTTPS (yukarıdaki bölüm).
+- `INTERNET` (0.3.0'dan beri): "Wi-Fi ile eşleştir" (aynı ağdaki masaüstüne HTTPS) ve isteğe bağlı güncelleme denetimi
+  (yalnız GitHub, yalnız sen açarsan; yukarıdaki bölümler).
+- `ACCESS_NETWORK_STATE` (yeni): güncellemeyi varsayılan olarak yalnız Wi-Fi'da indirmek için ağ türünü öğrenir.
+- `REQUEST_INSTALL_PACKAGES` (yeni): indirilip doğrulanan güncellemeyi sistemin kurulum penceresiyle kurmak için;
+  Android ayrıca "bu kaynaktan yüklemeye izin ver" ayarını senden ister.
   `CAMERA` izni YOK: QR'ı telefonun kamera uygulaması okur.
 
 ## Bilinen sınırlar

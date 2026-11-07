@@ -21,6 +21,20 @@ abstract class Kopru {
   void dosyaDinle(void Function(GelenDosya) f);
   Future<String?> bekleyenBaglanti();
   void baglantiDinle(void Function(String) f);
+
+  /// Güncelleme: etkin ağ türü ('wifi' | 'mobil' | 'yok'). Mobil veride indirme ayrı onay ister.
+  Future<String> agTuru();
+
+  /// "Bilinmeyen uygulamaları yükle" izni bu uygulamaya verilmiş mi (Android 8+).
+  Future<bool> kurulumIzniVar();
+
+  /// Sistemin bu uygulama için izin ekranını açar; kullanıcı verip geri döner.
+  Future<void> kurulumIzniAc();
+
+  /// Doğrulanmış APK'yı sistemin kurulum penceresiyle kurar (PackageInstaller). Yalnız uygulamanın
+  /// kendi geçici klasöründeki, aynı paket adlı, daha yüksek sürüm kodlu APK'yı kabul eder; hata
+  /// durumunda anlaşılır iletiyle `PlatformException` fırlatır. Başarı = kurulum penceresi açıldı.
+  Future<void> apkKur(String yol);
 }
 
 class AndroidKopru implements Kopru {
@@ -57,6 +71,18 @@ class AndroidKopru implements Kopru {
     _dosyaF = f;
     _isleyiciKur();
   }
+
+  @override
+  Future<String> agTuru() async => (await _kanal.invokeMethod<String>('agTuru')) ?? 'yok';
+
+  @override
+  Future<bool> kurulumIzniVar() async => (await _kanal.invokeMethod<bool>('kurulumIzniVar')) ?? false;
+
+  @override
+  Future<void> kurulumIzniAc() => _kanal.invokeMethod<void>('kurulumIzniAc');
+
+  @override
+  Future<void> apkKur(String yol) => _kanal.invokeMethod<void>('apkKur', yol);
 
   @override
   Future<String?> bekleyenBaglanti() => _kanal.invokeMethod<String>('bekleyenBaglanti');

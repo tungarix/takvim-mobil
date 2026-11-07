@@ -8,13 +8,21 @@ import 'package:flutter/material.dart';
 import 'app/kontrol.dart';
 import 'core/yerel_zaman.dart';
 import 'core/zaman.dart';
+import 'guncelleme/ag.dart';
+import 'guncelleme/hizmet.dart';
 import 'platform/bildirim.dart';
 import 'platform/dosya_servisi.dart';
 import 'platform/kopru.dart';
 import 'store/ayarlar.dart';
 import 'store/takvim_store.dart';
+import 'surum.dart';
 import 'ui/metin.dart';
 import 'ui/uygulama.dart';
+
+/// YALNIZ geliştirme/uçtan uca deneme: `--dart-define=GUNCELLEME_TABAN=http://10.0.2.2:PORT` derlemesi
+/// güncelleme denetimini yerel sahte bir GitHub'a yöneltir. Boşsa (release.yml hiç tanımlamaz) üretim
+/// davranışı: yalnız `api.github.com`. Çalışma zamanında değiştirilemez (derleme sabiti).
+const _guncellemeTaban = String.fromEnvironment('GUNCELLEME_TABAN');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +45,15 @@ Future<void> main() async {
       zaman: YerelZaman(tzid),
       bildirim: YerelBildirimler(),
       dosyalar: SistemDosyaServisi(dizinler.gecici),
+      kopru: kopru,
+      guncelleyici: Guncelleyici(
+        ayarlar: ayarlar,
+        klasor: Directory('${dizinler.gecici}/guncelleme'),
+        surum: surum,
+        ag: _guncellemeTaban.isEmpty
+            ? null
+            : Ag(surum: surum, apiTaban: _guncellemeTaban, ekSunucular: {Uri.parse(_guncellemeTaban).host}),
+      ),
     );
     runApp(TakvimUygulamasi(kontrol: kontrol, kopru: kopru));
     await kontrol.baslat();

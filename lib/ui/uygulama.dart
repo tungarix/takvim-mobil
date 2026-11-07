@@ -7,6 +7,7 @@ import '../app/kontrol.dart';
 import '../platform/kopru.dart';
 import 'ayarlar_sayfasi.dart';
 import 'etkinlik_islemleri.dart';
+import 'guncelleme_akisi.dart';
 import 'gorevler_sayfasi.dart';
 import 'metin.dart';
 import 'senkron_akisi.dart';
@@ -118,6 +119,8 @@ class _TakvimUygulamasiDurumu extends State<TakvimUygulamasi>
         if (b != null) await wifiBaglantiGeldi(k, b);
       });
     }
+    // Güncelleme: seçim yoksa tek seferlik soru, açıksa günde en çok bir denetim (ağ yalnız seçimle).
+    WidgetsBinding.instance.addPostFrameCallback((_) => guncellemeAcilis(k));
   }
 
   Future<void> _gelen(GelenDosya g) =>
@@ -135,6 +138,7 @@ class _TakvimUygulamasiDurumu extends State<TakvimUygulamasi>
       // Arka planda gün değişmiş olabilir; izin ayarlardan değişmiş olabilir.
       k.yenile();
       k.bildirimleriYenile();
+      guncellemeAcilis(k, sor: false);
     }
   }
 

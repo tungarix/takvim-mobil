@@ -14,6 +14,8 @@ import '../core/yerel_zaman.dart';
 import '../core/zaman.dart';
 import '../platform/bildirim.dart';
 import '../platform/dosya_servisi.dart';
+import '../guncelleme/hizmet.dart';
+import '../platform/kopru.dart';
 import '../store/ayarlar.dart';
 import '../store/takvim_store.dart';
 import '../sync/export.dart';
@@ -34,6 +36,8 @@ class TakvimKontrol extends ChangeNotifier {
     required this.dosyalar,
     DateTime Function()? saat,
     this.wifiOturumu = WifiIstemci.yeni,
+    this.guncelleyici,
+    this.kopru,
   }) : saat = saat ?? DateTime.now,
        gorunum = Gorunum.values.firstWhere(
          (g) => g.name == ayarlar.gorunum,
@@ -49,6 +53,12 @@ class TakvimKontrol extends ChangeNotifier {
   final BildirimServisi bildirim;
   final DosyaServisi dosyalar;
   final DateTime Function() saat;
+
+  /// Otomatik güncelleme (null = bu kurulumda yok, ör. bazı testler). Ağ yalnız kullanıcı izniyle.
+  final Guncelleyici? guncelleyici;
+
+  /// Android köprüsü (güncelleme: ağ türü, kurulum izni, APK kurulumu); testler sahtesini verir.
+  final Kopru? kopru;
 
   /// Wi-Fi eşleştirme oturumu üretici; testler sahtesini verir.
   final WifiOturum Function(WifiBaglanti) wifiOturumu;

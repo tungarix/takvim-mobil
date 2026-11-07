@@ -9,11 +9,15 @@ import 'package:takvim/core/bildirim_plani.dart';
 import 'package:takvim/core/models.dart';
 import 'package:takvim/core/veri.dart';
 import 'package:takvim/core/yerel_zaman.dart';
+import 'package:takvim/guncelleme/ag.dart';
+import 'package:takvim/guncelleme/hizmet.dart';
+import 'package:takvim/guncelleme/saf.dart';
 import 'package:takvim/platform/bildirim.dart';
 import 'package:takvim/platform/dosya_servisi.dart';
 import 'package:takvim/platform/kopru.dart';
 import 'package:takvim/store/ayarlar.dart';
 import 'package:takvim/store/takvim_store.dart';
+import 'package:takvim/sync/sha256.dart';
 import 'package:takvim/sync/wifi_baglanti.dart';
 import 'package:takvim/sync/wifi_istemci.dart';
 import 'package:takvim/ui/uygulama.dart';
@@ -59,6 +63,27 @@ class SahteKopru implements Kopru {
   void Function(GelenDosya)? dinleyici;
   String? bekleyenBag;
   void Function(String)? baglantiDinleyici;
+
+  String ag = 'wifi';
+  bool izin = true;
+  final kurulanlar = <String>[];
+  var izinAcildi = 0;
+  Object? kurHatasi;
+
+  @override
+  Future<String> agTuru() async => ag;
+
+  @override
+  Future<bool> kurulumIzniVar() async => izin;
+
+  @override
+  Future<void> kurulumIzniAc() async => izinAcildi++;
+
+  @override
+  Future<void> apkKur(String yol) async {
+    if (kurHatasi != null) throw kurHatasi!;
+    kurulanlar.add(yol);
+  }
 
   @override
   Future<String?> bekleyenBaglanti() async => bekleyenBag;
@@ -122,11 +147,53 @@ class SahteWifi implements WifiOturum {
   }
 }
 
-typedef Kurulum = ({TakvimKontrol k, SahteBildirim bildirim, SahteDosyalar dosyalar, Directory dizin});
+/// Güncelleme ağı sahtesi: gerçek ağa çıkmaz, çağrıları sayar. `apk` indirilecek içerik.
+class SahteAg extends Ag {
+  SahteAg({this.teklif, this.hata, List<int>? apk, this.ozetYanlis = false})
+      : apk = apk ?? List<int>.generate(2048, (i) => i % 251),
+        super(depo: 'tungarix/takvim-mobil', surum: '0.3.0');
+
+  /// Denetimde bulunacak sürüm (null = teklif yok).
+  Yayin? teklif;
+  GuncellemeHatasi? hata;
+  final List<int> apk;
+  bool ozetYanlis;
+  var denetimler = 0;
+  var indirmeler = 0;
+
+  static Yayin yayin(String surum, int boyut) => Yayin(
+        surum: surum,
+        apkUrl: 'https://github.com/tungarix/takvim-mobil/releases/download/v$surum/Takvim-$surum.apk',
+        apkBoyut: boyut,
+        ozetUrl: 'https://github.com/tungarix/takvim-mobil/releases/download/v$surum/SHA256SUMS.txt',
+        sayfaUrl: 'https://github.com/tungarix/takvim-mobil/releases/tag/v$surum',
+      );
+
+  @override
+  Future<SonYayinSonucu> sonYayin([String? etag]) async {
+    denetimler++;
+    if (hata != null) throw hata!;
+    return teklif == null ? ('yok', null, null) : ('yeni', teklif, '"e1"');
+  }
+
+  @override
+  Future<String> metinIndir(String url) async =>
+      '${ozetYanlis ? '0' * 64 : onaltilik(sha256(apk))}  Takvim-${teklif!.surum}.apk\n';
+
+  @override
+  Future<String> indir(String url, File hedef, int beklenenBoyut, {void Function(int alinan)? ilerleme}) async {
+    indirmeler++;
+    await hedef.writeAsBytes(apk);
+    ilerleme?.call(apk.length);
+    return onaltilik(sha256(apk));
+  }
+}
+
+typedef Kurulum = ({TakvimKontrol k, SahteBildirim bildirim, SahteDosyalar dosyalar, Directory dizin, Guncelleyici? guncelleyici});
 
 /// Gerçek dosya G/Ç'si olan kontrol (TakvimStore atomik yazması test edilsin diye gerçek).
 /// Saat sabit: 2026-11-03 13:00 yerel (10:00Z), Salı.
-Future<Kurulum> kontrolKurGercek({WifiOturum Function(WifiBaglanti)? wifi}) async {
+Future<Kurulum> kontrolKurGercek({WifiOturum Function(WifiBaglanti)? wifi, SahteAg? ag, SahteKopru? kopru}) async {
   final dizin = await Directory.systemTemp.createTemp('takvim_test');
   _dizinler.add(dizin);
   final saat = Saat('2026-11-03T10:00:00Z');
@@ -134,6 +201,7 @@ Future<Kurulum> kontrolKurGercek({WifiOturum Function(WifiBaglanti)? wifi}) asyn
   final ayarlar = await Ayarlar.ac(File('${dizin.path}/ayarlar.json'));
   final bildirim = SahteBildirim();
   final dosyalar = SahteDosyalar();
+  final guncelleyici = ag == null ? null : Guncelleyici(ayarlar: ayarlar, klasor: Directory('${dizin.path}/g'), surum: '0.3.0', ag: ag, saat: saat.call);
   final k = TakvimKontrol(
     store: store,
     ayarlar: ayarlar,
@@ -142,9 +210,11 @@ Future<Kurulum> kontrolKurGercek({WifiOturum Function(WifiBaglanti)? wifi}) asyn
     dosyalar: dosyalar,
     saat: saat.call,
     wifiOturumu: wifi ?? WifiIstemci.yeni,
+    guncelleyici: guncelleyici,
+    kopru: kopru,
   );
   await k.baslat();
-  return (k: k, bildirim: bildirim, dosyalar: dosyalar, dizin: dizin);
+  return (k: k, bildirim: bildirim, dosyalar: dosyalar, dizin: dizin, guncelleyici: guncelleyici);
 }
 
 final _dizinler = <Directory>[];
@@ -162,8 +232,8 @@ Future<void> dizinleriTemizle() async {
   _dizinler.clear();
 }
 
-Future<Kurulum> kontrolKur(WidgetTester t, {WifiOturum Function(WifiBaglanti)? wifi}) async =>
-    (await t.runAsync(() => kontrolKurGercek(wifi: wifi)))!;
+Future<Kurulum> kontrolKur(WidgetTester t, {WifiOturum Function(WifiBaglanti)? wifi, SahteAg? ag, SahteKopru? kopru}) async =>
+    (await t.runAsync(() => kontrolKurGercek(wifi: wifi, ag: ag, kopru: kopru)))!;
 
 Future<Kurulum> kontrolKurDuz() => kontrolKurGercek();
 

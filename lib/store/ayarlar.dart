@@ -35,6 +35,19 @@ class Ayarlar {
     return g == 'koyu' || g == 'acik' ? g as String : 'sistem';
   }
 
+  /// Otomatik güncelleme denetimi: null = hiç sorulmadı (ağ isteği YOK), true/false = kullanıcının seçimi.
+  /// Elle yazılmış "evet" gibi bir değer seçim SAYILMAZ.
+  bool? get guncellemeDenetimi {
+    final g = _m['guncelleme_denetimi'];
+    return g is bool ? g : null;
+  }
+
+  /// Güncelleyicinin saklı durumu (son denetim, ETag, bulunan sürüm, hata kodu); kopya döner.
+  Map<String, Object?> get guncellemeKaydi {
+    final g = _m['guncelleme'];
+    return g is Map ? Map<String, Object?>.from(g) : <String, Object?>{};
+  }
+
   DateTime? get sonSenkron {
     final s = _m['son_senkron'];
     if (s is! String) return null;
@@ -48,6 +61,10 @@ class Ayarlar {
   Future<void> gorunumYaz(String g) => _yaz({'gorunum': g});
 
   Future<void> temaYaz(String t) => _yaz({'tema': t});
+
+  Future<void> guncellemeDenetimiYaz(bool acik) => _yaz({'guncelleme_denetimi': acik});
+
+  Future<void> guncellemeKaydiYaz(Map<String, Object?> kayit) => _yaz({'guncelleme': kayit});
 
   Future<void> sonSenkronYaz(DateTime an) => _yaz({'son_senkron': utcYaz(an)});
 

@@ -2,6 +2,11 @@
     <!-- Wi-Fi eşleştirme (Ayarlar > Wi-Fi ile eşleştir): aynı ağdaki masaüstüne HTTPS bağlantısı. Yalnız bu özellik
          kullanılırken ağ isteği yapılır; başka hiçbir yere bağlanılmaz. Düz HTTP kapalı (usesCleartextTraffic=false). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Otomatik güncelleme (Ayarlar > Güncellemeler; kullanıcı açarsa): ağın Wi-Fi mi mobil veri mi olduğunu
+         anlamak için (varsayılan yalnız Wi-Fi'da indirir) ve indirilen APK'yı sistemin kurulum penceresiyle
+         kurmak için. İkincisi için kullanıcı "bu kaynaktan yüklemeye izin ver"i sistem ayarında ayrıca verir. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <!-- Android 13+: hatırlatıcı bildirimi göstermek için çalışma zamanı izni. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Cihaz yeniden başlayınca alarmlar yeniden kurulsun. -->
@@ -78,6 +83,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Kurulum oturumunun sonucu (yalnız kendi uygulamamız; dışarıdan çağrılamaz). -->
+        <receiver android:exported="false" android:name=".KurulumAlici"/>
 
         <!-- Planlı bildirimleri gösteren ve yeniden başlatmada yeniden kuran alıcılar (flutter_local_notifications). -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>

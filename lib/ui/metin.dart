@@ -208,6 +208,55 @@ class M {
   static String gonderHatasi(Object e) => 'Dosya gönderilemedi: $e';
   static const dosyaAdiOnek = 'takvim';
 
+  // --- Güncellemeler
+  static const guncellemeBolumu = 'Güncellemeler';
+  static const guncellemeOtomatik = 'Yeni sürümleri otomatik denetle';
+  static const guncellemeOtomatikAciklama =
+      'GitHub\'a günde en çok bir kez "son sürüm nedir" diye sorar; hesap, kimlik ya da veri gönderilmez. Kurmadan önce her zaman sorulur.';
+  static const guncellemeSecilmedi = 'Henüz seçilmedi (ağ isteği yapılmaz)';
+  static const guncellemeSimdiDenetle = 'Şimdi denetle';
+  static const guncellemeGuncel = 'Takvim güncel.';
+  static const guncellemeDurumHic = 'Henüz denetlenmedi.';
+  static String guncellemeDurumGuncel(String surum, String an) => 'Takvim güncel ($surum). Son denetim: $an.';
+  static String guncellemeDurumYeni(String surum) => 'Takvim $surum hazır.';
+  static String guncellemeDurumHata(String kod) => 'Son denetim başarısız oldu: ${guncellemeHata(kod)}';
+  static String guncellemeKurDugme(String surum) => '$surum sürümünü kur';
+  static String guncellemeHazirMesaj(String surum) => 'Takvim $surum hazır: Ayarlar → Güncellemeler\'den kurabilirsin.';
+  static const guncellemeSoruBaslik = 'Güncellemeler';
+  static const guncellemeSoruMetin =
+      'Yeni sürümler otomatik denetlensin mi? Denetim GitHub\'a günde en çok bir kez "son sürüm nedir" diye sorar; hesap, kimlik ya da veri gönderilmez. '
+      'Kurulumdan önce her zaman onayın istenir. İstediğinde Ayarlar\'dan değiştirebilirsin. Bu soruya yanıt vermeden hiçbir ağ isteği yapılmaz.';
+  static const guncellemeSoruEvet = 'Evet, denetle';
+  static const guncellemeSoruHayir = 'Hayır';
+  static const guncellemeKurBaslik = 'Güncelle';
+  static String guncellemeKurMetin(String surum, String mb) =>
+      'Takvim $surum (yaklaşık $mb MB) indirilip doğrulanacak, ardından sistemin kurulum penceresi açılacak. Verilerin korunur. Devam edilsin mi?';
+  static const guncellemeKurOnay = 'İndir ve kur';
+  static const guncellemeMobilBaslik = 'Mobil veri kullanılacak';
+  static String guncellemeMobilMetin(String mb) => 'Şu an mobil veya ölçülü bir ağdasın; yaklaşık $mb MB indirilecek. Devam edilsin mi?';
+  static const guncellemeMobilOnay = 'Mobil veriyle indir';
+  static const guncellemeCevrimdisi = 'İnternet bağlantısı yok.';
+  static const guncellemeIzinBaslik = 'Kurulum izni gerekli';
+  static const guncellemeIzinMetin =
+      'Android, Takvim\'in kendi güncellemesini kurabilmesi için "Bu kaynaktan yüklemeye izin ver" ayarını açmanı ister. '
+      'Ayarlar\'a gidip izni ver, sonra buraya dönüp tekrar dene. Başka bir uygulama kurulmaz; Android yalnızca aynı imzayla imzalı güncellemeyi kabul eder.';
+  static const guncellemeIzinAc = 'Ayarlar\'ı aç';
+  static const guncellemeIndiriliyor = 'Güncelleme indiriliyor ve doğrulanıyor…';
+  static String guncellemeKurulamadi(String neden) => 'Kurulum başlatılamadı: $neden';
+  static String guncellemeHata(String kod) => switch (kod) {
+        'limit' => 'GitHub şu an çok fazla istek gördü; biraz sonra tekrar dene.',
+        'ag_hatasi' => 'Güncelleme sunucusuna ulaşılamadı. Bağlantını kontrol et.',
+        'bozuk_yanit' => 'Güncelleme bilgisi okunamadı.',
+        'boyut_uyusmuyor' => 'İndirilen dosyanın boyutu beklenenle uyuşmadı; kurulum iptal edildi.',
+        'ozet_uyusmuyor' =>
+          'İndirilen dosyanın özeti doğrulanamadı; kurulum iptal edildi. Elle indir: github.com/tungarix/takvim-mobil/releases',
+        'ozet_bulunamadi' =>
+          'Yayında doğrulama özeti bulunamadı; kurulum iptal edildi. Elle indir: github.com/tungarix/takvim-mobil/releases',
+        'izin_yok' => 'Güncelleme dosyası yazılamadı.',
+        'adres_izinsiz' => 'Güncelleme adresi güvenli bulunmadı; kurulum iptal edildi.',
+        _ => 'Güncelleme başarısız ($kod).',
+      };
+
   // --- Wi-Fi eşleştirme
   static const wifiEslestir = 'Wi-Fi ile eşleştir';
   static const wifiEslestirAciklama = 'Aynı Wi-Fi ağındaki bilgisayarla doğrudan senkron';

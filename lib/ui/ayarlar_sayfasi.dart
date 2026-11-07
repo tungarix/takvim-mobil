@@ -6,6 +6,7 @@ import '../core/models.dart';
 import '../platform/bildirim.dart';
 import '../surum.dart';
 import 'bicim.dart';
+import 'guncelleme_akisi.dart';
 import 'metin.dart';
 import 'senkron_akisi.dart';
 import 'wifi_akisi.dart';
@@ -75,6 +76,10 @@ class AyarlarSayfasi extends StatelessWidget {
               title: Text(M.sonSenkron(sonMetin)),
               subtitle: const Text(M.senkronYardim),
             ),
+            if (kontrol.guncelleyici != null) ...[
+              baslik(M.guncellemeBolumu),
+              _GuncellemeBolumu(kontrol: kontrol),
+            ],
             baslik(M.hakkindaBolumu),
             ListTile(leading: const Icon(Icons.info_outline), title: const Text(M.uygulamaAdi), subtitle: Text(M.surum(surum))),
             const ListTile(leading: Icon(Icons.lock_outline), title: Text(M.verilerYalnizTelefonda)),
@@ -94,6 +99,71 @@ class AyarlarSayfasi extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _GuncellemeBolumu extends StatefulWidget {
+  const _GuncellemeBolumu({required this.kontrol});
+  final TakvimKontrol kontrol;
+
+  @override
+  State<_GuncellemeBolumu> createState() => _GuncellemeBolumuDurumu();
+}
+
+class _GuncellemeBolumuDurumu extends State<_GuncellemeBolumu> {
+  var _mesgul = false;
+
+  TakvimKontrol get k => widget.kontrol;
+
+  String _durum() {
+    final g = k.guncelleyici!;
+    final y = g.teklif;
+    if (y != null) return M.guncellemeDurumYeni(y.surum);
+    final h = g.hataKodu;
+    if (h != null) return M.guncellemeDurumHata(h);
+    final son = g.sonDenetim;
+    if (son == null) return M.guncellemeDurumHic;
+    final w = k.zaman.duvar(son);
+    return M.guncellemeDurumGuncel(g.surum, '${tarihTam(w)} ${saatMetni(w)}');
+  }
+
+  Future<void> _denetle() async {
+    setState(() => _mesgul = true);
+    try {
+      await guncellemeSimdiDenetle(k);
+    } finally {
+      if (mounted) setState(() => _mesgul = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = k.guncelleyici!;
+    final y = g.teklif;
+    return Column(children: [
+      SwitchListTile(
+        title: const Text(M.guncellemeOtomatik),
+        subtitle: Text(g.denetim == null ? M.guncellemeSecilmedi : M.guncellemeOtomatikAciklama),
+        value: g.denetim == true,
+        onChanged: (b) async {
+          await g.denetimYaz(b);
+          if (mounted) setState(() {});
+        },
+      ),
+      ListTile(leading: const Icon(Icons.system_update_alt), title: Text(_durum())),
+      ListTile(
+        leading: const Icon(Icons.refresh),
+        title: const Text(M.guncellemeSimdiDenetle),
+        enabled: !_mesgul,
+        onTap: _mesgul ? null : _denetle,
+      ),
+      if (y != null)
+        ListTile(
+          leading: const Icon(Icons.download),
+          title: Text(M.guncellemeKurDugme(y.surum)),
+          onTap: () => guncellemeKurAkisi(context, k),
+        ),
+    ]);
   }
 }
 
