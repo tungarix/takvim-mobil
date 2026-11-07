@@ -121,7 +121,7 @@ birbirinden ayırmadığını (misafir ağlar bunu yapabilir) kontrol et. **Yede
 ## Güncellemeler (isteğe bağlı)
 
 İlk açılışta bir kez **"Yeni sürümler otomatik denetlensin mi?"** diye sorulur; bu soruyu yanıtlamadan ağ isteği
-yapılmaz (geri tuşu soruyu kapatmaz). **Evet** dersen Takvim günde en çok bir kez yalnızca GitHub'a
+yapılmaz (geri tuşu soruyu kapatmaz); "Ayarlar → Şimdi denetle" ise senin kendi isteğindir ve her zaman çalışır. **Evet** dersen Takvim günde en çok bir kez yalnızca GitHub'a
 (`api.github.com/repos/tungarix/takvim-mobil/releases/latest`) "son sürüm nedir" diye sorar; hesap, kimlik ya da
 veri göndermez. Yeni sürüm varsa Ayarlar → Güncellemeler'de görünür ve **kurmadan önce her zaman sana sorar**.
 
@@ -132,6 +132,9 @@ veri göndermez. Yeni sürüm varsa Ayarlar → Güncellemeler'de görünür ve 
 - Android "Bu kaynaktan yüklemeye izin ver" ayarını ister; uygulama seni o ekrana götürür.
 - Yeni izinler: `REQUEST_INSTALL_PACKAGES` (yalnız bu kurulum için) ve `ACCESS_NETWORK_STATE` (ağın Wi-Fi mi mobil
   veri mi olduğunu anlamak için).
+- **Bilinen sınır:** `SHA256SUMS.txt` APK ile aynı yayında durur; GitHub hesabı ya da imza anahtarı ele geçirilirse
+  hash tek başına koruma değildir (saldırgan ikisini de üretir, Android da imzayı geçerli sayar). Kurulum sonucu
+  (ör. farklı imza nedeniyle reddedilme) ekranda bildirilir.
 - Bu özellikten önceki sürümler (≤ 0.3.0) ilk güncellemeyi bir kez elle yapar.
 
 ## Sürüm notları
@@ -273,8 +276,9 @@ denetimleridir. `tool/tz_takma_adlar_uret.py`, `lib/core/tz_takma_adlar.dart` ta
   (yalnız GitHub, yalnız sen açarsan; yukarıdaki bölümler).
 - `ACCESS_NETWORK_STATE` (yeni): güncellemeyi varsayılan olarak yalnız Wi-Fi'da indirmek için ağ türünü öğrenir.
 - `REQUEST_INSTALL_PACKAGES` (yeni): indirilip doğrulanan güncellemeyi sistemin kurulum penceresiyle kurmak için;
-  Android ayrıca "bu kaynaktan yüklemeye izin ver" ayarını senden ister.
-  `CAMERA` izni YOK: QR'ı telefonun kamera uygulaması okur.
+  Android ayrıca "bu kaynaktan yüklemeye izin ver" ayarını senden ister. İzin verildikten sonra kalıcıdır;
+  istersen güncellemeyi kurduktan sonra Android ayarlarından geri alabilirsin.
+- `CAMERA` izni YOK: QR'ı telefonun kamera uygulaması okur.
 
 ## Bilinen sınırlar
 

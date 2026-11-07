@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../app/kontrol.dart';
 import '../guncelleme/ag.dart';
+import '../guncelleme/hizmet.dart';
 import 'metin.dart';
 
 /// Açılışta ve arka plandan dönüşte: seçim yoksa (yalnız açılışta) sorar; açıksa günde en çok bir denetim.
@@ -109,19 +110,23 @@ Future<void> guncellemeKurAkisi(BuildContext context, TakvimKontrol k) async {
   if (!context.mounted) return;
   final nav = Navigator.of(context, rootNavigator: true);
   final alinan = ValueNotifier<int>(0);
+  ModalRoute<Object?>? ilerlemeRotasi;
   unawaited(
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (c) => PopScope(
         canPop: false,
-        child: AlertDialog(
+        child: Builder(builder: (c2) {
+          ilerlemeRotasi = ModalRoute.of(c2);
+          return AlertDialog(
           title: const Text(M.guncellemeIndiriliyor),
           content: ValueListenableBuilder<int>(
             valueListenable: alinan,
             builder: (_, n, _) => LinearProgressIndicator(value: y.apkBoyut == 0 ? null : (n / y.apkBoyut).clamp(0.0, 1.0)),
           ),
-        ),
+        );
+        }),
       ),
     ),
   );
@@ -129,12 +134,16 @@ Future<void> guncellemeKurAkisi(BuildContext context, TakvimKontrol k) async {
   void ilerlemeyiKapat() {
     if (!pencereAcik) return;
     pencereAcik = false;
-    nav.pop();
+    // Yalnızca KENDİ penceremizi kapat: üstüne başka bir rota (ör. Wi-Fi onayı) binmiş olabilir.
+    final r = ilerlemeRotasi;
+    if (r != null && r.isActive) nav.removeRoute(r);
   }
 
   try {
     final apk = await g.hazirla(y, ilerleme: (n) => alinan.value = n);
     ilerlemeyiKapat();
+    // Doğrulama ile kurulum arasında dosya değişmiş mi (derinlemesine savunma; asıl koruma Android imzası).
+    if (await Guncelleyici.dosyaOzeti(apk) != g.sonDogrulananOzet) throw const GuncellemeHatasi('ozet_uyusmuyor', 'kurulumdan önce yeniden doğrulama');
     await kopru.apkKur(apk.path);
     // Kurulum penceresi açıldı; sonrası Android'in işi (başarıda uygulama yenisiyle değiştirilir).
   } on GuncellemeHatasi catch (e) {
@@ -149,4 +158,10 @@ Future<void> guncellemeKurAkisi(BuildContext context, TakvimKontrol k) async {
   } finally {
     alinan.dispose();
   }
+}
+
+/// Sistem kurulum oturumunun sonucu: başarısız/engellenen kurulumda sessiz kalma (0 = başarı, -1 = onay bekliyor).
+void guncellemeKurulumSonucu(TakvimKontrol k, int durum, String? mesaj) {
+  if (durum == 0 || durum == -1) return;
+  k.mesaj(M.guncellemeKurulamadi(M.kurulumDurumu(durum, mesaj)), sure: const Duration(seconds: 10));
 }

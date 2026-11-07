@@ -461,4 +461,34 @@ void main() {
       expect(g2.teklif, isNull);
     });
   });
+
+  group('güvenlik incelemesi düzeltmeleri', () {
+    test('adres denetimi ayrıştırıcı farklarını kapatır', () {
+      const kotuler = [
+        'https://github.com/tungarix/takvim-mobil/releases/../../evil/x/releases/a',
+        'https://github.com/tungarix/takvim-mobil/releases/%2e%2e/%2e%2e/evil',
+        'https://github.com/tungarix/takvim-mobil/releases/a%2Fb',
+        'https://github.com:8443/tungarix/takvim-mobil/releases/download/v1/Takvim-0.4.0.apk',
+        'https://api.github.com/x y',
+        'https://api.github.com/x\r\nX: y',
+        ' https://api.github.com/x',
+        r'https://api.github.com/x\y',
+        'https://api.github.com/ı',
+      ];
+      for (final u in kotuler) {
+        expect(adresUygun(u, depo, const {}), isFalse, reason: u);
+      }
+    });
+
+    test('meşru adresler kabul edilir', () {
+      for (final u in [
+        'https://api.github.com/repos/tungarix/takvim-mobil/releases/latest',
+        'https://github.com/tungarix/takvim-mobil/releases/download/v0.4.0/Takvim-0.4.0.apk',
+        'https://github.com:443/tungarix/takvim-mobil/releases/download/v0.4.0/Takvim-0.4.0.apk',
+        'https://objects.githubusercontent.com/github-production-release-asset/1/2?X-Amz=abc&response-content-disposition=attachment',
+      ]) {
+        expect(adresUygun(u, depo, const {}), isTrue, reason: u);
+      }
+    });
+  });
 }

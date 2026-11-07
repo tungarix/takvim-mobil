@@ -42,6 +42,11 @@ class MainActivity : FlutterActivity() {
         if (savedInstanceState == null) dosyayiOku(intent)
     }
 
+    override fun onDestroy() {
+        KurulumAlici.sonucDinleyici = null
+        super.onDestroy()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         dosyayiOku(intent)
@@ -49,6 +54,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        KurulumAlici.sonucDinleyici = { durum, mesaj ->
+            runOnUiThread { kanal?.invokeMethod("kurulumSonucu", mapOf("durum" to durum, "mesaj" to mesaj)) }
+        }
         kanal = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.aktenak.takvim/kopru").also { k ->
             k.setMethodCallHandler { cagri, sonuc ->
                 when (cagri.method) {
@@ -91,6 +99,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun apkKur(yol: String?, sonuc: MethodChannel.Result) {
+        var oturumNo = -1
         try {
             require(yol != null) { "yol yok" }
             val dosya = File(yol).canonicalFile
@@ -108,6 +117,7 @@ class MainActivity : FlutterActivity() {
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
             params.setAppPackageName(packageName)
             val id = kurucu.createSession(params)
+            oturumNo = id
             kurucu.openSession(id).use { oturum ->
                 dosya.inputStream().use { girdi ->
                     oturum.openWrite("takvim.apk", 0, dosya.length()).use { cikti ->
@@ -121,6 +131,7 @@ class MainActivity : FlutterActivity() {
             }
             sonuc.success(null)
         } catch (e: Exception) {
+            if (oturumNo >= 0) try { packageManager.packageInstaller.abandonSession(oturumNo) } catch (_: Exception) {}
             sonuc.error("kurulum", e.message ?: e.javaClass.simpleName, null)
         }
     }

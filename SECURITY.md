@@ -4,7 +4,8 @@ Takvim (Android) hesapsız ve sunucusuz çalışır. `INTERNET` izni iki şey i�
 başlatınca, aynı yerel ağdaki özel IP'li masaüstü Takvim'e, sertifika parmak iziyle sabitlenmiş HTTPS) ve
 **isteğe bağlı güncelleme denetimi** (yalnız sen "evet" dersen, günde en çok bir kez, yalnız GitHub'a; veri
 göndermez; kurulumdan önce her zaman onay; APK'nın SHA-256'sı yayındaki `SHA256SUMS.txt`'le doğrulanır ve
-Android farklı imzalı APK'yı kurmaz). Başka hiçbir ağ isteği yoktur (ayrıntı README'de). Verin yalnız telefonundaki uygulama klasöründe durur ve bulut yedeğine gitmez
+Android farklı imzalı APK'yı kurmaz; GitHub hesabı ya da imza anahtarı ele geçirilirse hash tek başına koruma değildir).
+Başka hiçbir ağ isteği yoktur (ayrıntı README'de). Verin yalnız telefonundaki uygulama klasöründe durur ve bulut yedeğine gitmez
 (`allowBackup=false`). Bu saldırı yüzeyini küçültür ama sıfırlamaz: uygulama dışarıdan gelen
 `.takvimsync` dosyalarını okur (dosya seçici, "Birlikte aç", Paylaş menüsü) ve eşleştirme
 bağlantılarını (`https://aktenak.tech/s#...`, yalnız onay ekranını açar), yerel bildirim kurar ve

@@ -187,6 +187,18 @@ void main() {
       expect(kopru.kurulanlar, isEmpty);
     });
 
+    testWidgets('sistem kurulumu başarısız olursa kullanıcıya söylenir; başarı/onay bekleme sessiz', (tester) async {
+      final (_, kopru, _) = await hazir(tester);
+      kopru.kurulumSonucuF!(0, null);
+      kopru.kurulumSonucuF!(-1, null);
+      await tester.pump();
+      expect(find.textContaining('Kurulum başlatılamadı'), findsNothing);
+      kopru.kurulumSonucuF!(7, 'INSTALL_FAILED_UPDATE_INCOMPATIBLE');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.textContaining('farklı bir anahtarla imzalı'), findsOneWidget);
+    });
+
     testWidgets('özet tutmazsa kurulum penceresi HİÇ açılmaz', (tester) async {
       final (_, kopru, ag) = await hazir(tester, ag: SahteAg(teklif: SahteAg.yayin('0.4.0', 2048), ozetYanlis: true));
       await tester.tap(find.text('0.4.0 sürümünü kur'));

@@ -57,7 +57,7 @@ class Ag {
         final yanit = await istek.close().timeout(zamanAsimi);
         if (yanit.isRedirect) {
           final yer = yanit.headers.value(HttpHeaders.locationHeader);
-          await yanit.drain<void>();
+          await yanit.drain<void>().timeout(zamanAsimi);
           if (yer == null) throw const GuncellemeHatasi('ag_hatasi', 'yönlendirme adresi yok');
           adres = Uri.parse(adres).resolve(yer).toString();
           continue;

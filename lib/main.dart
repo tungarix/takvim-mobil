@@ -24,6 +24,14 @@ import 'ui/uygulama.dart';
 /// davranışı: yalnız `api.github.com`. Çalışma zamanında değiştirilemez (derleme sabiti).
 const _guncellemeTaban = String.fromEnvironment('GUNCELLEME_TABAN');
 
+/// Tanım yalnız yerel/emülatör adreslerinde kabul edilir (release derlemesine yanlışlıkla verilse bile
+/// düz HTTP ile rastgele sunucuya güvenmez).
+bool _taban() {
+  if (_guncellemeTaban.isEmpty) return false;
+  final host = Uri.tryParse(_guncellemeTaban)?.host;
+  return host == '10.0.2.2' || host == 'localhost' || host == '127.0.0.1';
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final kopru = AndroidKopru();
@@ -50,7 +58,7 @@ Future<void> main() async {
         ayarlar: ayarlar,
         klasor: Directory('${dizinler.gecici}/guncelleme'),
         surum: surum,
-        ag: _guncellemeTaban.isEmpty
+        ag: !_taban()
             ? null
             : Ag(surum: surum, apiTaban: _guncellemeTaban, ekSunucular: {Uri.parse(_guncellemeTaban).host}),
       ),

@@ -242,6 +242,20 @@ class M {
       'Ayarlar\'a gidip izni ver, sonra buraya dönüp tekrar dene. Başka bir uygulama kurulmaz; Android yalnızca aynı imzayla imzalı güncellemeyi kabul eder.';
   static const guncellemeIzinAc = 'Ayarlar\'ı aç';
   static const guncellemeIndiriliyor = 'Güncelleme indiriliyor ve doğrulanıyor…';
+  /// PackageInstaller durum kodunu anlaşılır metne çevirir (yalnız sabit eşleme; ham ileti ek bilgi).
+  static String kurulumDurumu(int durum, String? mesaj) {
+    final ek = (mesaj == null || mesaj.isEmpty) ? '' : ' ($mesaj)';
+    return switch (durum) {
+      2 => 'Android kurulumu engelledi.$ek',
+      3 => 'Kurulum iptal edildi.',
+      4 => 'Kurulum başarısız oldu.$ek',
+      5 => 'APK, kurulu uygulamayla çakışıyor.$ek',
+      6 => 'Bu cihazla uyumlu değil.$ek',
+      7 => 'Kurulu sürüm farklı bir anahtarla imzalı; Android güncellemeyi reddetti.$ek',
+      _ => 'Kurulum tamamlanamadı (kod $durum).$ek',
+    };
+  }
+
   static String guncellemeKurulamadi(String neden) => 'Kurulum başlatılamadı: $neden';
   static String guncellemeHata(String kod) => switch (kod) {
         'limit' => 'GitHub şu an çok fazla istek gördü; biraz sonra tekrar dene.',

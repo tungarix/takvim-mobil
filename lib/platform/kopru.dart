@@ -35,6 +35,10 @@ abstract class Kopru {
   /// kendi geçici klasöründeki, aynı paket adlı, daha yüksek sürüm kodlu APK'yı kabul eder; hata
   /// durumunda anlaşılır iletiyle `PlatformException` fırlatır. Başarı = kurulum penceresi açıldı.
   Future<void> apkKur(String yol);
+
+  /// Sistem kurulum oturumunun sonucu (PackageInstaller durum kodu + ileti). Başarısız/engellenen kurulumda
+  /// kullanıcıya haber vermek için; 0 = başarı.
+  void kurulumSonucuDinle(void Function(int durum, String? mesaj) f);
 }
 
 class AndroidKopru implements Kopru {
@@ -55,6 +59,7 @@ class AndroidKopru implements Kopru {
 
   void Function(GelenDosya)? _dosyaF;
   void Function(String)? _baglantiF;
+  void Function(int, String?)? _kurulumF;
 
   // Tek işleyici iki olayı da dinler (setMethodCallHandler yenisi eskisini siler).
   void _isleyiciKur() => _kanal.setMethodCallHandler((c) async {
@@ -63,6 +68,10 @@ class AndroidKopru implements Kopru {
           if (g != null) _dosyaF?.call(g);
         } else if (c.method == 'baglantiGeldi' && c.arguments is String) {
           _baglantiF?.call(c.arguments as String);
+        } else if (c.method == 'kurulumSonucu' && c.arguments is Map) {
+          final m = c.arguments as Map;
+          final d = m['durum'];
+          if (d is int) _kurulumF?.call(d, m['mesaj'] is String ? m['mesaj'] as String : null);
         }
       });
 
@@ -83,6 +92,12 @@ class AndroidKopru implements Kopru {
 
   @override
   Future<void> apkKur(String yol) => _kanal.invokeMethod<void>('apkKur', yol);
+
+  @override
+  void kurulumSonucuDinle(void Function(int durum, String? mesaj) f) {
+    _kurulumF = f;
+    _isleyiciKur();
+  }
 
   @override
   Future<String?> bekleyenBaglanti() => _kanal.invokeMethod<String>('bekleyenBaglanti');

@@ -70,6 +70,11 @@ class SahteKopru implements Kopru {
   var izinAcildi = 0;
   Object? kurHatasi;
 
+  void Function(int, String?)? kurulumSonucuF;
+
+  @override
+  void kurulumSonucuDinle(void Function(int durum, String? mesaj) f) => kurulumSonucuF = f;
+
   @override
   Future<String> agTuru() async => ag;
 

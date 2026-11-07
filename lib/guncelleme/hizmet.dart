@@ -24,6 +24,9 @@ class Guncelleyici {
   final Ag ag;
   final DateTime Function() _saat;
 
+  /// Son `hazirla`nın SHA256SUMS'tan doğruladığı özet; kurulumdan hemen önce dosya bununla yeniden denetlenir.
+  String? sonDogrulananOzet;
+
   /// `null` = hiç sorulmadı (ağ isteği YOK), true/false = kullanıcının seçimi.
   bool? get denetim => ayarlar.guncellemeDenetimi;
 
@@ -114,6 +117,7 @@ class Guncelleyici {
       }
       throw GuncellemeHatasi('ozet_uyusmuyor', '$gelen != $beklenen');
     }
+    sonDogrulananOzet = beklenen;
     return hedef;
   }
 

@@ -62,7 +62,8 @@ class Yayin {
 /// https + izinli sunucu; github.com'da yol bu deponun release'i olmalı.
 /// [ekSunucular] yalnız testler içindir (yerel sahte sunucu, http de olur); üretimde boş.
 bool adresUygun(Object? url, String depo, Set<String> ekSunucular) {
-  if (url is! String) return false;
+  // Boşluk/kontrol karakteri/ters eğik çizgi/ASCII dışı: ayrıştırıcılar farklı yorumlayabilir.
+  if (url is! String || url.runes.any((r) => r > 126 || r <= 32 || r == 0x5c)) return false;
   final Uri u;
   try {
     u = Uri.parse(url);
@@ -72,6 +73,9 @@ bool adresUygun(Object? url, String depo, Set<String> ekSunucular) {
   final sunucu = u.host.toLowerCase();
   if (ekSunucular.contains(sunucu)) return u.scheme == 'http' || u.scheme == 'https';
   if (u.scheme != 'https' || !izinliSunucular.contains(sunucu) || u.userInfo.isNotEmpty) return false;
+  if (u.hasPort && u.port != 443) return false;
+  final yol = u.path.toLowerCase();
+  if (u.pathSegments.contains('..') || yol.contains('%2e') || yol.contains('%5c') || yol.contains('%2f')) return false;
   if (sunucu == 'github.com') return u.path.startsWith('/$depo/releases/');
   return true;
 }

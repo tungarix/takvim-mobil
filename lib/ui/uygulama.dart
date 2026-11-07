@@ -111,6 +111,7 @@ class _TakvimUygulamasiDurumu extends State<TakvimUygulamasi>
     if (kopru != null) {
       kopru.dosyaDinle(_gelen);
       kopru.baglantiDinle((b) => wifiBaglantiGeldi(k, b));
+      kopru.kurulumSonucuDinle((durum, mesaj) => guncellemeKurulumSonucu(k, durum, mesaj));
       // Uygulama dosyayla açıldıysa ilk karede (gezgin hazırken) önizleme gösterilir.
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final g = await kopru.bekleyenDosya();
