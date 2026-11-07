@@ -35,6 +35,20 @@ class AyarlarSayfasi extends StatelessWidget {
             baslik(M.takvimler),
             for (final c in kontrol.takvimlerSirali) _TakvimSatiri(kontrol: kontrol, takvim: c),
             ListTile(leading: const Icon(Icons.add), title: const Text(M.takvimEkle), onTap: () => takvimDialogu(context, kontrol)),
+            baslik(M.gorunumBolumu),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: 'sistem', label: Text(M.temaSistem)),
+                  ButtonSegment(value: 'koyu', label: Text(M.temaKoyu)),
+                  ButtonSegment(value: 'acik', label: Text(M.temaAcik)),
+                ],
+                selected: {kontrol.ayarlar.tema},
+                onSelectionChanged: (s) => kontrol.temaDegistir(s.first),
+              ),
+            ),
             baslik(M.hatirlaticiBolumu),
             _HatirlaticiBolumu(kontrol: kontrol),
             baslik(M.senkronBolumu),

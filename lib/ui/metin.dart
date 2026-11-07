@@ -289,6 +289,10 @@ class M {
 
   // --- hakkında
   static const hakkindaBolumu = 'Hakkında';
+  static const gorunumBolumu = 'Görünüm';
+  static const temaSistem = 'Sistem';
+  static const temaKoyu = 'Koyu';
+  static const temaAcik = 'Açık';
   static String surum(String s) => 'Sürüm $s';
   static const verilerYalnizTelefonda =
       'Veriler yalnız bu telefonda tutulur, hesap gerekmez. Uygulama yalnız sen "Wi-Fi ile eşleştir"i kullanınca '

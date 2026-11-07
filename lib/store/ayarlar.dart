@@ -29,6 +29,12 @@ class Ayarlar {
     return g == 'hafta' || g == 'ay' ? g as String : 'gun';
   }
 
+  /// 'sistem' (varsayılan) | 'koyu' | 'acik'
+  String get tema {
+    final g = _m['tema'];
+    return g == 'koyu' || g == 'acik' ? g as String : 'sistem';
+  }
+
   DateTime? get sonSenkron {
     final s = _m['son_senkron'];
     if (s is! String) return null;
@@ -40,6 +46,8 @@ class Ayarlar {
   }
 
   Future<void> gorunumYaz(String g) => _yaz({'gorunum': g});
+
+  Future<void> temaYaz(String t) => _yaz({'tema': t});
 
   Future<void> sonSenkronYaz(DateTime an) => _yaz({'son_senkron': utcYaz(an)});
 

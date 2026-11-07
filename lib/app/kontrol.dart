@@ -34,8 +34,12 @@ class TakvimKontrol extends ChangeNotifier {
     required this.dosyalar,
     DateTime Function()? saat,
     this.wifiOturumu = WifiIstemci.yeni,
-  })  : saat = saat ?? DateTime.now,
-        gorunum = Gorunum.values.firstWhere((g) => g.name == ayarlar.gorunum, orElse: () => Gorunum.gun) {
+  }) : saat = saat ?? DateTime.now,
+       gorunum = Gorunum.values.firstWhere(
+         (g) => g.name == ayarlar.gorunum,
+         orElse: () => Gorunum.gun,
+       ),
+       temaModu = ValueNotifier(_temaModu(ayarlar.tema)) {
     odakGun = bugun;
   }
 
@@ -58,6 +62,13 @@ class TakvimKontrol extends ChangeNotifier {
   /// Alt gezinme sekmesi (0 takvim, 1 görevler, 2 ayarlar); arama gibi yerler takvime atlatır.
   final sekme = ValueNotifier<int>(0);
 
+  /// Görünüm tercihi (Ayarlar → Görünüm); uygulama kökü bunu dinler.
+  final ValueNotifier<ThemeMode> temaModu;
+
+  static ThemeMode _temaModu(String t) => t == 'koyu'
+      ? ThemeMode.dark
+      : (t == 'acik' ? ThemeMode.light : ThemeMode.system);
+
   late DateTime odakGun; // duvar günü
   Gorunum gorunum;
 
@@ -71,7 +82,9 @@ class TakvimKontrol extends ChangeNotifier {
   /// bildirimleri kurar.
   Future<void> baslat() async {
     if (veri.calendars.isEmpty) {
-      await yap((v) => v.addCalendar(varsayilanTakvimAdi, varsayilanTakvimRengi));
+      await yap(
+        (v) => v.addCalendar(varsayilanTakvimAdi, varsayilanTakvimRengi),
+      );
     }
     try {
       await bildirim.baslat();
@@ -88,7 +101,10 @@ class TakvimKontrol extends ChangeNotifier {
     try {
       await store.degistir<void>(f);
     } catch (e) {
-      mesaj(M.kaydedilemedi(e is ArgumentError ? '${e.message}' : e), sure: const Duration(seconds: 8));
+      mesaj(
+        M.kaydedilemedi(e is ArgumentError ? '${e.message}' : e),
+        sure: const Duration(seconds: 8),
+      );
       return false;
     }
     notifyListeners();
@@ -97,16 +113,25 @@ class TakvimKontrol extends ChangeNotifier {
   }
 
   /// SnackBar; öncekini kaldırır (üst üste yığılmasın). `eylem` tek adım geri alma içindir.
-  void mesaj(String metin, {String? eylem, VoidCallback? eylemFn, Duration sure = const Duration(seconds: 5)}) {
+  void mesaj(
+    String metin, {
+    String? eylem,
+    VoidCallback? eylemFn,
+    Duration sure = const Duration(seconds: 5),
+  }) {
     final m = mesajci.currentState;
     if (m == null) return;
     m
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(metin),
-        duration: sure,
-        action: eylem == null ? null : SnackBarAction(label: eylem, onPressed: eylemFn ?? () {}),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(metin),
+          duration: sure,
+          action: eylem == null
+              ? null
+              : SnackBarAction(label: eylem, onPressed: eylemFn ?? () {}),
+        ),
+      );
   }
 
   // ------------------------------------------------------------ gezinme
@@ -124,13 +149,25 @@ class TakvimKontrol extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// [t]: 'sistem' | 'koyu' | 'acik'. Ekran hemen değişir, kayıt hatası yalnız bildirilir.
+  Future<void> temaDegistir(String t) async {
+    temaModu.value = _temaModu(t);
+    try {
+      await ayarlar.temaYaz(t);
+    } catch (e) {
+      mesaj(M.hata(e));
+    }
+  }
+
   Future<void> gorunumDegistir(Gorunum g) async {
     gorunum = g;
     notifyListeners();
     try {
       await ayarlar.gorunumYaz(g.name);
     } catch (e) {
-      mesaj(M.hata(e)); // görünüm tercihi kaydedilemedi: veri değil, yine de görünür
+      mesaj(
+        M.hata(e),
+      ); // görünüm tercihi kaydedilemedi: veri değil, yine de görünür
     }
   }
 
@@ -138,15 +175,20 @@ class TakvimKontrol extends ChangeNotifier {
 
   /// Yeni etkinlik/görev bloğu için takvim: görünür olanlar arasında "Kişisel" yoksa ilk (ada göre).
   Calendar? get varsayilanTakvim {
-    final hepsi = veri.calendars.values.toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final hepsi = veri.calendars.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     final gorunur = hepsi.where((c) => c.visible).toList();
     final aday = gorunur.isNotEmpty ? gorunur : hepsi;
     if (aday.isEmpty) return null;
-    return aday.firstWhere((c) => c.name == varsayilanTakvimAdi, orElse: () => aday.first);
+    return aday.firstWhere(
+      (c) => c.name == varsayilanTakvimAdi,
+      orElse: () => aday.first,
+    );
   }
 
   List<Calendar> get takvimlerSirali =>
-      veri.calendars.values.toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      veri.calendars.values.toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
   // ------------------------------------------------------------ bildirimler
 
@@ -160,7 +202,9 @@ class TakvimKontrol extends ChangeNotifier {
       final plan = bildirimPlani(veri, simdi);
       // Hatırlatıcı olan ilk anda (oturum başına bir kez) bildirim izni istenir;
       // reddedilirse uygulama çalışmaya devam eder, Ayarlar'da uyarı görünür.
-      if (plan.isNotEmpty && !_izinSoruldu && bildirim.durum.value.bildirimIzni == false) {
+      if (plan.isNotEmpty &&
+          !_izinSoruldu &&
+          bildirim.durum.value.bildirimIzni == false) {
         _izinSoruldu = true;
         await bildirim.izinIste();
       }
@@ -181,7 +225,8 @@ class TakvimKontrol extends ChangeNotifier {
   /// Telefonun tam durumu (`.takvimsync` metni); Wi-Fi'da birleşmeden sonra masaüstüne gider.
   String senkronMetni() => disaAktarMetin(veri, store.cihaz);
 
-  Future<void> senkronGonder() => dosyalar.paylas(disaAktarMetin(veri, store.cihaz), senkronDosyaAdi());
+  Future<void> senkronGonder() =>
+      dosyalar.paylas(disaAktarMetin(veri, store.cihaz), senkronDosyaAdi());
 
   /// Dosyayı mevcut veriyle birleştirmeyi DENER ve raporu verir; hiçbir şeyi değiştirmez.
   /// Bozuk/büyük sürüm dosyası BicimHatasi/SurumHatasi fırlatır.
@@ -198,7 +243,9 @@ class TakvimKontrol extends ChangeNotifier {
     try {
       await ayarlar.sonSenkronYaz(simdi);
     } catch (e) {
-      mesaj(M.hata(e)); // veri uygulandı; yalnızca "son senkron" zamanı yazılamadı
+      mesaj(
+        M.hata(e),
+      ); // veri uygulandı; yalnızca "son senkron" zamanı yazılamadı
     }
     notifyListeners();
     return sonuc.rapor;
@@ -208,7 +255,8 @@ class TakvimKontrol extends ChangeNotifier {
   static String senkronHataMetni(Object e) {
     if (e is SurumHatasi) return M.surumBuyuk(e.dosyaSurumu);
     if (e is BicimHatasi) {
-      return e.mesaj.contains('senkron dosyası değil') || e.mesaj.startsWith('JSON okunamadı')
+      return e.mesaj.contains('senkron dosyası değil') ||
+              e.mesaj.startsWith('JSON okunamadı')
           ? M.dosyaTakvimSyncDegil
           : M.dosyaBozuk(e.mesaj);
     }
