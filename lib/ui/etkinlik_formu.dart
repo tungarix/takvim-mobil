@@ -166,6 +166,12 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
       setState(() => _bitisHata = M.bitisHataliEtkinlik);
       return;
     }
+    // UNTIL, DTSTART'tan önce olursa etkinlik hiçbir günde görünmez (sessiz kayıp).
+    if (!_buOrnek && _tekrar.tur != TekrarTuru.yok && _tekrar.bitis == TekrarBitisi.tarih &&
+        _tekrar.bitisGunu != null && _tekrar.bitisGunu!.isBefore(gunDuvar(_bas))) {
+      setState(() => _bitisHata = M.tekrarBitisOnce);
+      return;
+    }
     setState(() => _kaydediyor = true);
     final baslik = _baslik.text.trim();
     final ok = await k.yap((v) => _uygula(v, baslik, basUtc, bitUtc, etz));
@@ -191,10 +197,10 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
       return;
     }
     if (widget.kapsam == Kapsam.buOrnek) {
-      final konum = _bos(_konum.text);
+      final konum = _bos(_konum.text) ?? ''; // null = seriden miras; boşaltma '' olarak saklanır
       v.putOverride(e.uid, EventOverride(
         originalStart: o.originalStart, newStart: basUtc, newEnd: bitUtc,
-        newTitle: baslik != e.title ? baslik : null, newLocation: konum != e.location ? konum : null,
+        newTitle: baslik != e.title ? baslik : null, newLocation: konum != (e.location ?? '') ? konum : null,
       ));
       return;
     }

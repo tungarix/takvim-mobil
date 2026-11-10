@@ -232,7 +232,7 @@ class Veri {
     final cozulmus = (ov.newStart != null && ov.newEnd == null)
         ? EventOverride(
             originalStart: ov.originalStart, cancelled: ov.cancelled, newStart: ov.newStart,
-            newEnd: ov.newStart!.add(e.duration), newTitle: ov.newTitle, newLocation: ov.newLocation)
+            newEnd: ornekBitisi(e, ov.newStart!), newTitle: ov.newTitle, newLocation: ov.newLocation)
         : ov;
     _etkinlikGuncelle(eventUid, overrides: [...e.overrides.where((o) => o.originalStart != ov.originalStart), cozulmus]);
   }

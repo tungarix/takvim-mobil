@@ -41,6 +41,11 @@ abstract class BildirimServisi {
   Future<void> yenile(List<PlanliBildirim> plan, YerelZaman zaman);
 }
 
+/// Tetiği `simdi`den geçmiş olanları eler. Plan izin penceresinde bayatlayabilir; geçmişteki
+/// tetik zonedSchedule'da ArgumentError verir ve kalan bildirimleri kurmadan keser.
+List<PlanliBildirim> gelecekteOlanlar(List<PlanliBildirim> plan, DateTime simdi) =>
+    [for (final b in plan) if (b.tetik.isAfter(simdi)) b];
+
 class YerelBildirimler extends BildirimServisi {
   final _p = FlutterLocalNotificationsPlugin();
 
@@ -87,7 +92,7 @@ class YerelBildirimler extends BildirimServisi {
     );
     var kurulan = 0;
     String? hata;
-    for (final b in plan) {
+    for (final b in gelecekteOlanlar(plan, DateTime.now())) {
       final o = b.ornek;
       final govde = o.allDay ? M.bildirimGovdeTumGun : M.bildirimGovde(b.dakikaOnce, saatMetni(zaman.duvar(o.start)));
       Future<void> kur(AndroidScheduleMode mod) => _p.zonedSchedule(
@@ -109,6 +114,8 @@ class YerelBildirimler extends BildirimServisi {
         kurulan++;
       } on PlatformException catch (e) {
         hata = e.message ?? e.code; // tek bildirim patlarsa diğerleri kurulmaya devam eder
+      } on ArgumentError {
+        // Tetik kurulma anında geçmişe düştüyse atlanır; kalanlar kurulmaya devam eder.
       }
     }
     durum.value = durum.value.kopya(planli: kurulan, hata: hata, hataTemizle: hata == null);

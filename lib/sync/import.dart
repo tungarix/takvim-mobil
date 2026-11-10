@@ -87,6 +87,12 @@ void _dogrula(Map<String, dynamic> j, Veri dosya) {
     if (ev.reminders.any((dk) => dk > maksHatirlatici)) {
       throw BicimHatasi('reminders: en çok $maksHatirlatici dakika (10 yıl) olabilir (${ev.uid})');
     }
+    // Masaüstü Override.__post_init__ ile aynı: yalnız new_end verili, iptal değilse bitiş orijinal başlangıçtan önce olamaz.
+    for (final o in ev.overrides) {
+      if (!o.cancelled && o.newStart == null && o.newEnd != null && o.newEnd!.isBefore(o.originalStart)) {
+        throw BicimHatasi('overrides: new_end_utc, original_start_utc\'den önce olamaz (${ev.uid})');
+      }
+    }
   }
   for (final c in dosya.calendars.values) {
     if (!_renkDesen.hasMatch(c.color)) throw BicimHatasi('color: #rrggbb bekleniyor (${c.name})');

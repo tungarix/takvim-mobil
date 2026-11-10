@@ -81,7 +81,7 @@ Event _kopya(
 }) =>
     Event(
       uid: uid, calendarUid: e.calendarUid, title: e.title, description: e.description, location: e.location,
-      start: start, end: start.add(e.duration), tzid: e.tzid, allDay: e.allDay, rrule: rrule, rdate: rdate,
+      start: start, end: ornekBitisi(e, start), tzid: e.tzid, allDay: e.allDay, rrule: rrule, rdate: rdate,
       exdate: exdate, reminders: e.reminders, overrides: overrides, createdAt: createdAt, updatedAt: updatedAt,
     );
 

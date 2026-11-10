@@ -190,11 +190,19 @@ List<DateTime> kuralBaslangiclari(Event e, DateTime after, DateTime before) {
   return sonuc.toList()..sort();
 }
 
+/// Örneğin bitişi. Tüm gün etkinlikte süre yerel duvar saatiyle sayılır: sabit 24 saat DST
+/// gününde (23/25 saat) bitişi ertesi günün 01:00'ine ya da önceki günün 23:00'üne kaydırır.
+DateTime ornekBitisi(Event e, DateTime start) {
+  if (!e.allDay) return start.add(e.duration);
+  final loc = konumBul(e.tzid);
+  return duvardanUtc(loc, utcdenDuvar(loc, start).add(utcdenDuvar(loc, e.end).difference(utcdenDuvar(loc, e.start))));
+}
+
 Occurrence _duz(Event e, DateTime start) => Occurrence(
       eventUid: e.uid,
       title: e.title,
       start: start,
-      end: start.add(e.duration),
+      end: ornekBitisi(e, start),
       allDay: e.allDay,
       tzid: e.tzid,
       calendarUid: e.calendarUid,
@@ -209,7 +217,7 @@ Occurrence _duz(Event e, DateTime start) => Occurrence(
 /// Bitiş başlangıçtan önceye düşerse (yalnız new_end verilmişse) null.
 Occurrence? _degisik(Event e, DateTime orijinal, EventOverride ov) {
   final start = ov.newStart ?? orijinal;
-  final end = ov.newEnd ?? start.add(e.duration);
+  final end = ov.newEnd ?? ornekBitisi(e, start);
   if (end.isBefore(start)) return null;
   return Occurrence(
     eventUid: e.uid,

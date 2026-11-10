@@ -100,20 +100,33 @@ class TakvimStore {
     return depo;
   }
 
-  /// `degistir`in düz hâli: hazır bir durumu yazar; yazma başarısızsa bellek eskisi kalır.
-  Future<void> uygula(Veri yeni) async {
+  // Yazmalar sıraya girer: art arda iki çağrı aynı tabandan kopya alıp birbirinin
+  // değişikliğini ezmesin, aynı .tmp dosyasına da birlikte yazmasın.
+  Future<void> _sira = Future.value();
+
+  Future<T> _sirala<T>(Future<T> Function() is_) {
+    final c = _sira.then((_) => is_());
+    _sira = c.then((_) {}, onError: (_) {}); // bir hata sonraki çağrıları zehirlemesin
+    return c; // hata kendi çağırana gider
+  }
+
+  Future<void> _uygula(Veri yeni) async {
     await _yaz(yeni);
     _veri = yeni;
   }
 
+  /// `degistir`in düz hâli: hazır bir durumu yazar; yazma başarısızsa bellek eskisi kalır.
+  Future<void> uygula(Veri yeni) => _sirala(() => _uygula(yeni));
+
   /// Durumun kopyasında değişiklik yapar, kopyayı atomik yazar, sonra benimser.
   /// `f` ya da yazma hata verirse hem bellek hem dosya olduğu gibi kalır.
-  Future<T> degistir<T>(T Function(Veri) f) async {
-    final kopya = _veri.kopya();
-    final sonuc = f(kopya);
-    await uygula(kopya);
-    return sonuc;
-  }
+  /// Kopya sıranın İÇİNDE alınır: her çağrı önceki yazmanın sonucunu görür.
+  Future<T> degistir<T>(T Function(Veri) f) => _sirala(() async {
+        final kopya = _veri.kopya();
+        final sonuc = f(kopya);
+        await _uygula(kopya);
+        return sonuc;
+      });
 
   Future<void> _yaz(Veri v) async {
     final metin = jsonEncode({

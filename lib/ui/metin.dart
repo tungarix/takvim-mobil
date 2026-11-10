@@ -74,6 +74,7 @@ class M {
   static const tekrarBitisTarih = 'Tarihte bitsin';
   static const tekrarBitisSayi = 'Şu kadar tekrar';
   static const tekrarSayi = 'Tekrar sayısı';
+  static const tekrarBitisOnce = 'Tekrar bitiş tarihi, başlangıçtan önce olamaz';
   static const tekrarBitisTarihiSec = 'Bitiş tarihi';
   static const sayiGecersiz = '1 veya daha büyük bir sayı girin';
   static const sadeceBuOrnekIpucu = 'Yalnızca bu örnek değişir: başlık, saat ve konum.';

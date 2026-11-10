@@ -1503,7 +1503,7 @@
    },
    {
     "start_utc": "2026-10-03T14:00:00Z",
-    "end_utc": "2026-10-04T14:00:00Z",
+    "end_utc": "2026-10-04T13:00:00Z",
     "title": "Baslik",
     "location": "Yer",
     "is_override": false,
