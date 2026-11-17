@@ -101,12 +101,12 @@ class _SaatIzgarasiDurumu extends State<SaatIzgarasi> {
         SizedBox(
           width: etiketGenisligi,
           child: Column(children: [
-            SizedBox(height: ustYuk),
+            SizedBox(height: ustYuk - 8), // etiket görüntü alanı 8 px yukarı taşar: üst kenarda saat etiketi yarıdan kesilmesin
             Expanded(
               child: SingleChildScrollView(
                 controller: _etiketKaydirma,
                 physics: const NeverScrollableScrollPhysics(),
-                child: const _SaatEtiketleri(),
+                child: const Padding(padding: EdgeInsets.only(top: 8), child: _SaatEtiketleri()),
               ),
             ),
           ]),

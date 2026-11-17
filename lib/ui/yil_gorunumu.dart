@@ -15,7 +15,7 @@ class YilGorunumu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
       child: Column(children: [
         for (var r = 0; r < 4; r++)
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

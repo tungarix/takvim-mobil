@@ -571,14 +571,18 @@ class _Satir extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 56),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
             child: Row(children: [
-              Expanded(child: Text(etiket, style: tema.textTheme.bodyLarge)),
-              if (renk != null) ...[
-                Container(width: 12, height: 12, decoration: BoxDecoration(color: renk, shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-              ],
-              if (deger != null) Flexible(child: Text(deger!, overflow: TextOverflow.ellipsis, style: tema.textTheme.bodyMedium?.copyWith(color: soluk))),
+              Text(etiket, style: tema.textTheme.bodyLarge),
+              Expanded(
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  if (renk != null) ...[
+                    Container(width: 12, height: 12, decoration: BoxDecoration(color: renk, shape: BoxShape.circle)),
+                    const SizedBox(width: 8),
+                  ],
+                  if (deger != null) Flexible(child: Text(deger!, overflow: TextOverflow.ellipsis, style: tema.textTheme.bodyMedium?.copyWith(color: soluk))),
+                ]),
+              ),
               Icon(Icons.chevron_right, color: soluk),
             ]),
           ),
