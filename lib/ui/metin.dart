@@ -33,6 +33,7 @@ class M {
   static const gorunumGun = 'Gün';
   static const gorunumHafta = 'Hafta';
   static const gorunumAy = 'Ay';
+  static const gorunumYil = 'Yıl';
   static const onceki = 'Önceki';
   static const sonraki = 'Sonraki';
   static const ara = 'Ara';

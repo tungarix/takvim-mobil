@@ -25,7 +25,7 @@ import '../sync/wifi_istemci.dart';
 import '../ui/bicim.dart';
 import '../ui/metin.dart';
 
-enum Gorunum { gun, hafta, ay }
+enum Gorunum { gun, hafta, ay, yil }
 
 class TakvimKontrol extends ChangeNotifier {
   TakvimKontrol({
