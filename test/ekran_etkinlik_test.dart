@@ -18,7 +18,7 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Başlık'), 'Diş randevusu');
-    await tester.tap(find.text('Kaydet'));
+    await tester.tap(find.byTooltip('Kaydet'));
     await bekle(tester, () => s.k.veri.events.isNotEmpty);
     await tester.pumpAndSettle();
     final e = s.k.veri.events.values.single;
@@ -28,12 +28,27 @@ void main() {
     expect(s.bildirim.planlar, isNotEmpty); // kayıt sonrası bildirimler yeniden kuruldu
   });
 
+  testWidgets('form: büyük başlık, X/onay çubuğu; tüm gün saatleri gizler', (tester) async {
+    final s = await kontrolKur(tester);
+    await uygulamaAc(tester, s.k);
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Etkinlik ekle'), findsOneWidget);
+    expect(find.byTooltip('İptal'), findsOneWidget);
+    expect(find.byTooltip('Kaydet'), findsOneWidget);
+    expect(find.text('Tekrarlanmaz'), findsOneWidget);
+    final saatli = find.textContaining(':').evaluate().length;
+    await tester.tap(find.text('Tüm gün'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(':').evaluate().length, lessThan(saatli));
+  });
+
   testWidgets('başlıksız etkinlik kaydedilmez', (tester) async {
     final s = await kontrolKur(tester);
     await uygulamaAc(tester, s.k);
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Kaydet'));
+    await tester.tap(find.byTooltip('Kaydet'));
     await tester.pumpAndSettle();
     expect(find.text('Başlık gerekli'), findsOneWidget);
     expect(s.k.veri.events, isEmpty);
@@ -95,7 +110,7 @@ void main() {
 
     Future<void> kaydet(WidgetTester tester, String yeniBaslik) async {
       await tester.enterText(find.widgetWithText(TextFormField, 'Başlık'), yeniBaslik);
-      await tester.tap(find.text('Kaydet'));
+      await tester.tap(find.byTooltip('Kaydet'));
     }
 
     // Seri dünden başlar: bugünkü örnek ilk örnek değildir, üç kapsam da kullanılabilir.

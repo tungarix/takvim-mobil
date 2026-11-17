@@ -16,7 +16,7 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Başlık'), 'Kurs');
-    await tester.tap(find.byIcon(Icons.repeat));
+    await tester.tap(find.text('Tekrar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Her gün').last);
     await tester.pumpAndSettle();
@@ -38,7 +38,7 @@ void main() {
     await tester.tap(find.text('1'));
     await tester.tap(find.text('Tamam'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Kaydet'));
+    await tester.tap(find.byTooltip('Kaydet'));
     await tester.pumpAndSettle();
     expect(find.text('Tekrar bitiş tarihi, başlangıçtan önce olamaz'), findsOneWidget);
     expect(s.k.veri.events, isEmpty);
@@ -60,7 +60,7 @@ void main() {
     await tester.tap(find.text('Yalnızca bu etkinlik'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Konum'), '');
-    await tester.tap(find.text('Kaydet'));
+    await tester.tap(find.byTooltip('Kaydet'));
     await bekle(tester, () => s.k.veri.events['e1']!.overrides.isNotEmpty);
     expect(s.k.veri.events['e1']!.overrides.single.newLocation, '');
   });
