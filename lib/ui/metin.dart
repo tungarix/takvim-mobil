@@ -44,6 +44,7 @@ class M {
   static String gunOnce(int n) => '$n gün önce';
   static const yeniEtkinlik = 'Yeni etkinlik';
   static const etkinlikEkle = 'Etkinlik ekle';
+  static const etkinligiDuzenle = 'Etkinliği düzenle';
 
   // --- gün adları (Pazartesi ilk)
   static const gunAdlari = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
