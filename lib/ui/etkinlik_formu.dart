@@ -248,10 +248,10 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final takvimler = k.takvimlerSirali;
+    final takvim = takvimler.where((c) => c.uid == _takvimUid).firstOrNull;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(tooltip: M.iptal, icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
-        title: Text(_yeni ? M.yeniEtkinlik : M.duzenle),
         actions: [
           if (!_yeni)
             IconButton(
@@ -262,111 +262,159 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
                 if (await etkinlikSil(context, k, widget.ornek!) && nav.mounted) nav.pop();
               },
             ),
-          TextButton(onPressed: _kaydediyor ? null : _kaydet, child: const Text(M.kaydet)),
+          IconButton(tooltip: M.kaydet, icon: const Icon(Icons.check), onPressed: _kaydediyor ? null : _kaydet),
+          const SizedBox(width: 8),
         ],
       ),
       body: Form(
         key: _anahtar,
-        child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 32), children: [
-          TextFormField(
-            controller: _baslik,
-            autofocus: _yeni,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: M.baslik),
-            validator: (s) => (s ?? '').trim().isEmpty ? M.baslikGerekli : null,
+        child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Semantics(header: true, child: Text(_yeni ? M.etkinlikEkle : M.etkinligiDuzenle, style: tema.textTheme.headlineLarge)),
           ),
+          _Kart(children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextFormField(
+                controller: _baslik,
+                autofocus: _yeni,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: _yalinAlan(M.baslik),
+                validator: (s) => (s ?? '').trim().isEmpty ? M.baslikGerekli : null,
+              ),
+            ),
+          ]),
           if (_buOrnek)
-            Padding(padding: const EdgeInsets.only(top: 8), child: Text(M.sadeceBuOrnekIpucu, style: tema.textTheme.bodySmall)),
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: Text(M.sadeceBuOrnekIpucu, style: tema.textTheme.bodySmall)),
+          _Kart(children: [
+            if (!_buOrnek)
+              SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: const Text(M.tumGun),
+                value: _tumGun,
+                onChanged: (b) => setState(() {
+                  _tumGun = b;
+                  if (b) {
+                    _bas = gunDuvar(_bas);
+                    _bit = gunDuvar(_bit).isBefore(_bas) ? _bas : gunDuvar(_bit);
+                  } else {
+                    _bas = DateTime.utc(_bas.year, _bas.month, _bas.day, 9);
+                    _bit = _bas.add(const Duration(hours: 1));
+                  }
+                }),
+              ),
+            _ZamanSatiri(
+              etiket: M.baslangic,
+              tarih: _bas,
+              saatGoster: !_tumGun,
+              onTarih: () async {
+                final t = await _tarihSec(_bas);
+                if (t != null) _basDegistir(DateTime.utc(t.year, t.month, t.day, _bas.hour, _bas.minute));
+              },
+              onSaat: () async {
+                final s = await _saatSec(_bas);
+                if (s != null) _basDegistir(DateTime.utc(_bas.year, _bas.month, _bas.day, s.hour, s.minute));
+              },
+            ),
+            _ZamanSatiri(
+              etiket: M.bitis,
+              tarih: _bit,
+              saatGoster: !_tumGun,
+              hata: _bitisHata,
+              onTarih: () async {
+                final t = await _tarihSec(_bit);
+                if (t != null) setState(() => _bit = DateTime.utc(t.year, t.month, t.day, _bit.hour, _bit.minute));
+              },
+              onSaat: () async {
+                final s = await _saatSec(_bit);
+                if (s != null) setState(() => _bit = DateTime.utc(_bit.year, _bit.month, _bit.day, s.hour, s.minute));
+              },
+            ),
+          ]),
           if (!_buOrnek) ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: takvimler.any((c) => c.uid == _takvimUid) ? _takvimUid : null,
-              decoration: const InputDecoration(labelText: M.takvim),
-              items: [
-                for (final c in takvimler)
-                  DropdownMenuItem(
-                    value: c.uid,
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(width: 12, height: 12, decoration: BoxDecoration(color: renkOku(c.color), shape: BoxShape.circle)),
-                      const SizedBox(width: 8),
-                      Flexible(child: Text(c.name, overflow: TextOverflow.ellipsis)),
-                    ]),
-                  ),
-              ],
-              onChanged: (u) => setState(() => _takvimUid = u ?? _takvimUid),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(M.tumGun),
-              value: _tumGun,
-              onChanged: (b) => setState(() {
-                _tumGun = b;
-                if (b) {
-                  _bas = gunDuvar(_bas);
-                  _bit = gunDuvar(_bit).isBefore(_bas) ? _bas : gunDuvar(_bit);
-                } else {
-                  _bas = DateTime.utc(_bas.year, _bas.month, _bas.day, 9);
-                  _bit = _bas.add(const Duration(hours: 1));
-                }
-              }),
-            ),
+            _Kart(children: [
+              _Satir(
+                etiket: M.takvim,
+                deger: takvim?.name ?? '',
+                renk: takvim == null ? null : renkOku(takvim.color),
+                onTap: () async {
+                  final u = await _secenekSec<String>([
+                    for (final c in takvimler) (c.uid, c.name, renkOku(c.color)),
+                  ], _takvimUid);
+                  if (u != null) setState(() => _takvimUid = u);
+                },
+              ),
+              ..._tekrarSatirlari(),
+            ]),
+            _hatirlaticiKarti(tema),
           ],
-          _ZamanSatiri(
-            etiket: M.baslangic,
-            tarih: _bas,
-            saatGoster: !_tumGun,
-            onTarih: () async {
-              final t = await _tarihSec(_bas);
-              if (t != null) _basDegistir(DateTime.utc(t.year, t.month, t.day, _bas.hour, _bas.minute));
-            },
-            onSaat: () async {
-              final s = await _saatSec(_bas);
-              if (s != null) _basDegistir(DateTime.utc(_bas.year, _bas.month, _bas.day, s.hour, s.minute));
-            },
-          ),
-          _ZamanSatiri(
-            etiket: M.bitis,
-            tarih: _bit,
-            saatGoster: !_tumGun,
-            hata: _bitisHata,
-            onTarih: () async {
-              final t = await _tarihSec(_bit);
-              if (t != null) setState(() => _bit = DateTime.utc(t.year, t.month, t.day, _bit.hour, _bit.minute));
-            },
-            onSaat: () async {
-              final s = await _saatSec(_bit);
-              if (s != null) setState(() => _bit = DateTime.utc(_bit.year, _bit.month, _bit.day, s.hour, s.minute));
-            },
-          ),
-          const SizedBox(height: 8),
-          TextFormField(controller: _konum, decoration: const InputDecoration(labelText: M.konum, prefixIcon: Icon(Icons.place_outlined))),
-          if (!_buOrnek) ...[
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _aciklama,
-              minLines: 2,
-              maxLines: 6,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: M.aciklama, prefixIcon: Icon(Icons.notes), alignLabelWithHint: true),
+          _Kart(children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextFormField(controller: _konum, decoration: _yalinAlan(M.konum, Icons.place_outlined)),
             ),
-            const SizedBox(height: 16),
-            _tekrarBolumu(tema),
-            const SizedBox(height: 16),
-            _hatirlaticiBolumu(tema),
-          ],
+            if (!_buOrnek)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextFormField(
+                  controller: _aciklama,
+                  minLines: 2,
+                  maxLines: 6,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: _yalinAlan(M.aciklama, Icons.notes),
+                ),
+              ),
+          ]),
         ]),
       ),
     );
   }
 
-  Widget _tekrarBolumu(ThemeData tema) {
+  /// Kartın içinde çizgisiz, dolgusuz giriş alanı.
+  InputDecoration _yalinAlan(String etiket, [IconData? simge]) => InputDecoration(
+        labelText: etiket,
+        icon: simge == null ? null : Icon(simge),
+        alignLabelWithHint: true,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+      );
+
+  /// Alt sayfada seçenek listesi; (değer, metin, renk?) üçlüleri. İptalde null.
+  Future<T?> _secenekSec<T>(List<(T, String, Color?)> secenekler, T secili) => showModalBottomSheet<T>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (c) => SafeArea(
+          child: ListView(shrinkWrap: true, children: [
+            for (final (d, m, renk) in secenekler)
+              ListTile(
+                minTileHeight: 48,
+                leading: renk == null ? null : Container(width: 12, height: 12, decoration: BoxDecoration(color: renk, shape: BoxShape.circle)),
+                title: Text(m, overflow: TextOverflow.ellipsis),
+                trailing: d == secili ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(c, d),
+              ),
+          ]),
+        ),
+      );
+
+  List<Widget> _tekrarSatirlari() {
     if (_ozelTekrar) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(M.tekrar, style: tema.textTheme.titleSmall),
-        const SizedBox(height: 4),
-        Text(M.tekrarOzel),
-        TextButton(onPressed: () => setState(() { _ozelTekrar = false; _tekrar = const TekrarAyari(); }), child: const Text(M.tekrarYok)),
-      ]);
+      return [
+        const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 0), child: Text(M.tekrarOzel)),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton(onPressed: () => setState(() { _ozelTekrar = false; _tekrar = const TekrarAyari(); }), child: const Text(M.tekrarYok)),
+          ),
+        ),
+      ];
     }
     final etiket = {
       TekrarTuru.yok: M.tekrarYok,
@@ -375,16 +423,23 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
       TekrarTuru.aylik: M.tekrarAylik,
       TekrarTuru.yillik: M.tekrarYillik,
     };
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      DropdownButtonFormField<TekrarTuru>(
-        initialValue: _tekrar.tur,
-        decoration: const InputDecoration(labelText: M.tekrar, prefixIcon: Icon(Icons.repeat)),
-        items: [for (final t in TekrarTuru.values) DropdownMenuItem(value: t, child: Text(etiket[t]!))],
-        onChanged: (t) => setState(() => _tekrar = _tekrar.kopya(tur: t)),
+    final bitisEtiket = {
+      TekrarBitisi.hic: M.tekrarBitisHic,
+      TekrarBitisi.tarih: M.tekrarBitisTarih,
+      TekrarBitisi.sayi: M.tekrarBitisSayi,
+    };
+    return [
+      _Satir(
+        etiket: M.tekrar,
+        deger: etiket[_tekrar.tur]!,
+        onTap: () async {
+          final t = await _secenekSec<TekrarTuru>([for (final t in TekrarTuru.values) (t, etiket[t]!, null)], _tekrar.tur);
+          if (t != null) setState(() => _tekrar = _tekrar.kopya(tur: t));
+        },
       ),
       if (_tekrar.tur == TekrarTuru.haftalik)
         Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Wrap(spacing: 6, runSpacing: 4, children: [
             for (var g = 1; g <= 7; g++)
               Semantics(
@@ -401,59 +456,56 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
           ]),
         ),
       if (_tekrar.tur != TekrarTuru.yok) ...[
-        const SizedBox(height: 8),
-        DropdownButtonFormField<TekrarBitisi>(
-          initialValue: _tekrar.bitis,
-          decoration: const InputDecoration(labelText: M.bitis),
-          items: const [
-            DropdownMenuItem(value: TekrarBitisi.hic, child: Text(M.tekrarBitisHic)),
-            DropdownMenuItem(value: TekrarBitisi.tarih, child: Text(M.tekrarBitisTarih)),
-            DropdownMenuItem(value: TekrarBitisi.sayi, child: Text(M.tekrarBitisSayi)),
-          ],
-          onChanged: (b) => setState(() => _tekrar = _tekrar.kopya(bitis: b, bitisGunu: _tekrar.bitisGunu ?? gunEkle(gunDuvar(_bas), 30))),
+        _Satir(
+          etiket: M.bitis,
+          deger: bitisEtiket[_tekrar.bitis]!,
+          onTap: () async {
+            final b = await _secenekSec<TekrarBitisi>([for (final b in TekrarBitisi.values) (b, bitisEtiket[b]!, null)], _tekrar.bitis);
+            if (b != null) setState(() => _tekrar = _tekrar.kopya(bitis: b, bitisGunu: _tekrar.bitisGunu ?? gunEkle(gunDuvar(_bas), 30)));
+          },
         ),
         if (_tekrar.bitis == TekrarBitisi.tarih)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-              icon: const Icon(Icons.event),
-              label: Text('${M.tekrarBitisTarihiSec}: ${tarihTam(_tekrar.bitisGunu ?? _bas)}'),
-              onPressed: () async {
-                final t = await _tarihSec(_tekrar.bitisGunu ?? _bas);
-                if (t != null) setState(() => _tekrar = _tekrar.kopya(bitisGunu: t));
-              },
-            ),
+          _Satir(
+            etiket: '${M.tekrarBitisTarihiSec}: ${tarihTam(_tekrar.bitisGunu ?? _bas)}',
+            onTap: () async {
+              final t = await _tarihSec(_tekrar.bitisGunu ?? _bas);
+              if (t != null) setState(() => _tekrar = _tekrar.kopya(bitisGunu: t));
+            },
           ),
         if (_tekrar.bitis == TekrarBitisi.sayi)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextFormField(
               controller: _sayi,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: M.tekrarSayi),
+              decoration: _yalinAlan(M.tekrarSayi),
               validator: (s) => (int.tryParse((s ?? '').trim()) ?? 0) < 1 ? M.sayiGecersiz : null,
             ),
           ),
       ],
-    ]);
+    ];
   }
 
-  Widget _hatirlaticiBolumu(ThemeData tema) {
+  Widget _hatirlaticiKarti(ThemeData tema) {
     final sirali = _hat.toList()..sort();
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(M.hatirlaticilar, style: tema.textTheme.titleSmall),
-      const SizedBox(height: 4),
-      Wrap(spacing: 8, runSpacing: 4, children: [
-        for (final m in sirali)
-          InputChip(
-            avatar: const Icon(Icons.notifications_none, size: 18),
-            label: Text(M.hatirlaticiMetni(m)),
-            deleteButtonTooltipMessage: M.sil,
-            onDeleted: () => setState(() => _hat.remove(m)),
-          ),
-        ActionChip(avatar: const Icon(Icons.add, size: 18), label: const Text(M.hatirlaticiEkle), onPressed: _hatirlaticiSec),
-      ]),
+    return _Kart(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Semantics(header: true, child: Text(M.hatirlaticilar, style: tema.textTheme.bodyLarge)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 4, children: [
+            for (final m in sirali)
+              InputChip(
+                avatar: const Icon(Icons.notifications_none, size: 18),
+                label: Text(M.hatirlaticiMetni(m)),
+                deleteButtonTooltipMessage: M.sil,
+                onDeleted: () => setState(() => _hat.remove(m)),
+              ),
+            ActionChip(avatar: const Icon(Icons.add, size: 18), label: const Text(M.hatirlaticiEkle), onPressed: _hatirlaticiSec),
+          ]),
+        ]),
+      ),
     ]);
   }
 
@@ -479,6 +531,63 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
   }
 }
 
+/// Yuvarlak köşeli koyu kart grubu (ay görünümündeki kart diliyle aynı).
+class _Kart extends StatelessWidget {
+  const _Kart({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        // Material: içteki ListTile/InkWell sıçramaları kart zemininin üstünde görünsün.
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(24),
+          clipBehavior: Clip.antiAlias,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+        ),
+      );
+}
+
+/// Solda etiket, sağda değer ve ">" olan dokunulabilir satır (en az 56 px).
+class _Satir extends StatelessWidget {
+  const _Satir({required this.etiket, required this.onTap, this.deger, this.renk});
+  final String etiket;
+  final String? deger;
+  final Color? renk;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final soluk = tema.colorScheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label: deger == null ? etiket : '$etiket, $deger',
+      onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              Expanded(child: Text(etiket, style: tema.textTheme.bodyLarge)),
+              if (renk != null) ...[
+                Container(width: 12, height: 12, decoration: BoxDecoration(color: renk, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+              ],
+              if (deger != null) Flexible(child: Text(deger!, overflow: TextOverflow.ellipsis, style: tema.textTheme.bodyMedium?.copyWith(color: soluk))),
+              Icon(Icons.chevron_right, color: soluk),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ZamanSatiri extends StatelessWidget {
   const _ZamanSatiri({required this.etiket, required this.tarih, required this.saatGoster, required this.onTarih, required this.onSaat, this.hata});
   final String etiket;
@@ -491,26 +600,27 @@ class _ZamanSatiri extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
+    final soluk = tema.colorScheme.onSurfaceVariant;
+    final deger = tema.textTheme.bodyMedium?.copyWith(color: soluk);
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          SizedBox(width: 78, child: Text(etiket, style: tema.textTheme.bodyMedium)),
-          Expanded(
-            child: TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(0, 48), alignment: Alignment.centerLeft),
-              onPressed: onTarih,
-              child: Text('${tarih.day} ${M.ayKisa[tarih.month - 1]} ${tarih.year} ${M.gunKisa[tarih.weekday - 1]}'),
-            ),
+          Expanded(child: Text(etiket, style: tema.textTheme.bodyLarge)),
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(0, 56), foregroundColor: soluk, padding: const EdgeInsets.symmetric(horizontal: 6)),
+            onPressed: onTarih,
+            child: Text('${tarih.day} ${M.ayKisa[tarih.month - 1]} ${tarih.year} ${M.gunKisa[tarih.weekday - 1]}', style: deger),
           ),
           if (saatGoster)
             TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+              style: TextButton.styleFrom(minimumSize: const Size(48, 56), foregroundColor: soluk, padding: const EdgeInsets.symmetric(horizontal: 6)),
               onPressed: onSaat,
-              child: Text(saatMetni(tarih), style: const TextStyle(fontSize: 16)),
+              child: Text(saatMetni(tarih), style: deger),
             ),
+          Icon(Icons.chevron_right, color: soluk),
         ]),
-        if (hata != null) Padding(padding: const EdgeInsets.only(left: 78), child: Text(hata!, style: TextStyle(color: tema.colorScheme.error, fontSize: 12))),
+        if (hata != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(hata!, style: TextStyle(color: tema.colorScheme.error, fontSize: 12))),
       ]),
     );
   }
