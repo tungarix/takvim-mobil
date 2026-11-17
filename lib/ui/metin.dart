@@ -36,6 +36,12 @@ class M {
   static const onceki = 'Önceki';
   static const sonraki = 'Sonraki';
   static const ara = 'Ara';
+  static const guneGit = 'Güne git';
+  static const etkinlikYok = 'Etkinlik yok';
+  static const haftayaDaralt = 'Ayı haftaya daralt';
+  static const ayiAc = 'Ayı aç';
+  static String gunIcinde(int n) => '$n gün içinde';
+  static String gunOnce(int n) => '$n gün önce';
   static const yeniEtkinlik = 'Yeni etkinlik';
   static const etkinlikEkle = 'Etkinlik ekle';
 

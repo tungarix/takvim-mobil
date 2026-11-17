@@ -52,6 +52,7 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
       Gorunum.gun => s,
       Gorunum.hafta => gunEkle(s, k.odakGun.weekday - 1),
       Gorunum.ay => () {
+          if (s.year == k.bugun.year && s.month == k.bugun.month) return k.bugun; // bugünü içeren ay bugün seçili açılır
           final son = DateTime.utc(s.year, s.month + 1, 0).day;
           return DateTime.utc(s.year, s.month, k.odakGun.day > son ? son : k.odakGun.day);
         }(),
@@ -84,6 +85,23 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
 
   String _gorunumAdi(Gorunum g) => switch (g) { Gorunum.gun => M.gorunumGun, Gorunum.hafta => M.gorunumHafta, Gorunum.ay => M.gorunumAy };
 
+  /// Telefon ay başlığı: "Kasım 2026" + seçili gün bugün değilse soluk göreli metin ("3 gün önce").
+  Widget _ayBasligi() {
+    final fark = k.odakGun.difference(k.bugun).inDays;
+    final tema = Theme.of(context);
+    // Göreli metin başlığın altında: yan yana, üç eylem düğmesiyle yer yetmiyor.
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(ayYil(k.odakGun), maxLines: 1, overflow: TextOverflow.ellipsis),
+      if (fark != 0)
+        Text(
+          fark > 0 ? M.gunIcinde(fark) : M.gunOnce(-fark),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tema.textTheme.labelMedium?.copyWith(color: tema.colorScheme.onSurfaceVariant, height: 1),
+        ),
+    ]);
+  }
+
   String _baslik(bool dar) {
     final d = k.odakGun;
     final bugun = k.bugun;
@@ -109,7 +127,7 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
         final dar = MediaQuery.sizeOf(context).width < telefonEsigi;
         return Scaffold(
           appBar: AppBar(
-            title: Text(_baslik(dar)),
+            title: g == Gorunum.ay && dar ? _ayBasligi() : Text(_baslik(dar)),
             titleTextStyle: g == Gorunum.ay ? Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700) : null,
             actions: [
               // Telefonda hafta: kolonlar yatay kaydırıldığı için haftalar arası geçiş oklarla.
@@ -130,6 +148,19 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
               IconButton(tooltip: M.bugun, icon: const Icon(Icons.today), onPressed: () => k.odakAyarla(k.bugun)),
             ],
           ),
+          // Telefon ayında seçili gün bugün değilse bugüne dönüş düğmesi; dış iskelenin + düğmesinin hemen üstünde.
+          floatingActionButton: g == Gorunum.ay && dar && k.odakGun != k.bugun
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 72, right: 8),
+                  child: FloatingActionButton.small(
+                    heroTag: null,
+                    tooltip: M.bugun,
+                    shape: const CircleBorder(),
+                    onPressed: () => k.odakAyarla(k.bugun),
+                    child: Text('${k.bugun.day}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                )
+              : null,
           body: _icerik(g, dar, MediaQuery.sizeOf(context).width),
         );
       },
@@ -163,7 +194,7 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
         return switch (g) {
           Gorunum.gun => SaatIzgarasi(key: ValueKey('gun-$gun'), kontrol: k, gunler: [gun]),
           Gorunum.hafta => SaatIzgarasi(key: ValueKey('hafta-$gun'), kontrol: k, gunler: [for (var i = 0; i < 7; i++) gunEkle(gun, i)]),
-          Gorunum.ay => AyGorunumu(key: ValueKey('ay-$gun'), kontrol: k, ay: gun),
+          Gorunum.ay => AyGorunumu(key: ValueKey('ay-$gun'), kontrol: k, ay: gun, dar: dar),
         };
       },
     );
