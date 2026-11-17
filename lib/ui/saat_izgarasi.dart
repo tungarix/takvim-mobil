@@ -18,7 +18,7 @@ import 'metin.dart';
 
 const double saatYuksekligi = 56;
 const double etiketGenisligi = 44;
-const double _baslikYuksekligi = 52;
+const double _baslikYuksekligi = 68;
 const double _seritSatiri = 26;
 const int _seritEnFazla = 3;
 
@@ -130,7 +130,7 @@ class _SaatIzgarasiDurumu extends State<SaatIzgarasi> {
                     height: seritYuk,
                     child: Row(children: [for (final g in veriler) SizedBox(width: kolonW, child: _TumGunSeridi(kontrol: k, veri: g))]),
                   ),
-                Divider(height: 1, color: tema.dividerColor),
+                Divider(height: 1, color: tema.colorScheme.onSurface.withValues(alpha: .1)),
                 Expanded(
                   child: SingleChildScrollView(
                     controller: _dikey,
@@ -179,15 +179,16 @@ class _GunBasligi extends StatelessWidget {
     final bugunMu = gun == kontrol.bugun;
     final renk = bugunMu ? tema.colorScheme.primary : tema.colorScheme.onSurface;
     final icerik = Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(M.gunKisa[gun.weekday - 1], style: tema.textTheme.labelMedium?.copyWith(color: renk)),
-      const SizedBox(height: 2),
+      Text(M.gunKisa[gun.weekday - 1], style: tema.textTheme.labelMedium?.copyWith(color: bugunMu ? renk : tema.colorScheme.onSurfaceVariant)),
+      const SizedBox(height: 3),
       Container(
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         alignment: Alignment.center,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: bugunMu ? tema.colorScheme.primary : null),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: bugunMu ? tema.colorScheme.primary : null),
         child: Text('${gun.day}',
-            style: tema.textTheme.titleSmall?.copyWith(color: bugunMu ? tema.colorScheme.onPrimary : tema.colorScheme.onSurface)),
+            style: tema.textTheme.titleMedium?.copyWith(
+                fontWeight: bugunMu ? FontWeight.w700 : FontWeight.w500, color: bugunMu ? tema.colorScheme.onPrimary : tema.colorScheme.onSurface)),
       ),
     ]);
     if (tek) return Semantics(label: tarihTam(gun), child: icerik);
@@ -233,8 +234,10 @@ class _TumGunChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final gorev = oge.gorev;
     final bitti = gorev?.done ?? false;
-    final renk = bitti ? oge.renk.withValues(alpha: .45) : oge.renk;
-    final yazi = yaziRengi(renk);
+    final tema = Theme.of(context);
+    // Sade etiket: takvim renginin soluk tonu zemin, yazı temadan.
+    final renk = oge.renk.withValues(alpha: bitti ? .15 : .3);
+    final yazi = bitti ? tema.colorScheme.onSurfaceVariant : tema.colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Semantics(
@@ -242,12 +245,12 @@ class _TumGunChip extends StatelessWidget {
         label: '${M.tumGun}: ${oge.baslik}',
         child: Material(
           color: renk,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
           child: InkWell(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(8),
             onTap: () => gorev != null ? gorevEylemleri(context, kontrol, gorev) : etkinlikDetayGoster(context, kontrol, oge.ornek!),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Row(children: [
                 if (gorev != null) Icon(bitti ? Icons.check_circle : Icons.radio_button_unchecked, size: 12, color: yazi),
                 if (gorev != null) const SizedBox(width: 2),
@@ -285,7 +288,7 @@ class _GunKolonu extends StatelessWidget {
         yeniEtkinlikAc(context, kontrol, baslangic: DateTime.utc(veri.gun.year, veri.gun.month, veri.gun.day, 0, dakika.clamp(0, 23 * 60 + 30)));
       },
       child: Stack(clipBehavior: Clip.hardEdge, children: [
-        Positioned.fill(child: CustomPaint(painter: _IzgaraCizici(tema.dividerColor.withValues(alpha: .6)))),
+        Positioned.fill(child: CustomPaint(painter: _IzgaraCizici(tema.colorScheme.onSurface.withValues(alpha: .1), tema.colorScheme.onSurface.withValues(alpha: .05)))),
         for (final y in veri.saatli) _Blok(kontrol: kontrol, y: y, kolonGenisligi: genislik, gun: veri.gun),
         if (bugunMu)
           Positioned(
@@ -305,8 +308,9 @@ class _GunKolonu extends StatelessWidget {
 }
 
 class _IzgaraCizici extends CustomPainter {
-  _IzgaraCizici(this.renk);
+  _IzgaraCizici(this.renk, this.dikeyRenk);
   final Color renk;
+  final Color dikeyRenk;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -316,11 +320,11 @@ class _IzgaraCizici extends CustomPainter {
     for (var s = 0; s < 24; s++) {
       canvas.drawLine(Offset(0, s * saatYuksekligi), Offset(size.width, s * saatYuksekligi), p);
     }
-    canvas.drawLine(Offset.zero, Offset(0, size.height), p);
+    canvas.drawLine(Offset.zero, Offset(0, size.height), p..color = dikeyRenk);
   }
 
   @override
-  bool shouldRepaint(_IzgaraCizici o) => o.renk != renk;
+  bool shouldRepaint(_IzgaraCizici o) => o.renk != renk || o.dikeyRenk != dikeyRenk;
 }
 
 class _Blok extends StatelessWidget {
