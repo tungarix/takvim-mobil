@@ -82,7 +82,9 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
     });
   }
 
-  String _baslik() {
+  String _gorunumAdi(Gorunum g) => switch (g) { Gorunum.gun => M.gorunumGun, Gorunum.hafta => M.gorunumHafta, Gorunum.ay => M.gorunumAy };
+
+  String _baslik(bool dar) {
     final d = k.odakGun;
     final bugun = k.bugun;
     switch (k.gorunum) {
@@ -91,7 +93,8 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
       case Gorunum.hafta:
         final b = haftaBasi(d), s = gunEkle(b, 6);
         final ay = b.month == s.month ? '${b.day}' : gunKisaMetin(b);
-        return '$ay – ${gunKisaMetin(s)} ${s.year}';
+        // Telefonda oklar yer tuttuğundan, bu yılın haftasında yıl yazılmaz.
+        return dar && s.year == bugun.year ? '$ay – ${gunKisaMetin(s)}' : '$ay – ${gunKisaMetin(s)} ${s.year}';
       case Gorunum.ay:
         return ayYil(d);
     }
@@ -106,35 +109,28 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
         final dar = MediaQuery.sizeOf(context).width < telefonEsigi;
         return Scaffold(
           appBar: AppBar(
-            title: Text(_baslik()),
+            title: Text(_baslik(dar)),
+            titleTextStyle: g == Gorunum.ay ? Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700) : null,
             actions: [
+              // Telefonda hafta: kolonlar yatay kaydırıldığı için haftalar arası geçiş oklarla.
+              if (g == Gorunum.hafta && dar) ...[
+                IconButton(tooltip: M.onceki, icon: const Icon(Icons.chevron_left), onPressed: () => _adim(-1)),
+                IconButton(tooltip: M.sonraki, icon: const Icon(Icons.chevron_right), onPressed: () => _adim(1)),
+              ],
+              PopupMenuButton<Gorunum>(
+                tooltip: M.gorunumBolumu,
+                initialValue: g,
+                onSelected: k.gorunumDegistir,
+                itemBuilder: (_) => [
+                  for (final v in Gorunum.values) PopupMenuItem(value: v, child: Text(_gorunumAdi(v))),
+                ],
+                icon: Icon(switch (g) { Gorunum.gun => Icons.view_day_outlined, Gorunum.hafta => Icons.view_week_outlined, Gorunum.ay => Icons.calendar_view_month_outlined }),
+              ),
               IconButton(tooltip: M.ara, icon: const Icon(Icons.search), onPressed: () => aramaAc(context, k)),
               IconButton(tooltip: M.bugun, icon: const Icon(Icons.today), onPressed: () => k.odakAyarla(k.bugun)),
             ],
           ),
-          body: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
-              child: Row(children: [
-                Expanded(
-                  child: SegmentedButton<Gorunum>(
-                    showSelectedIcon: false,
-                    style: const ButtonStyle(visualDensity: VisualDensity.compact, minimumSize: WidgetStatePropertyAll(Size(0, 48))),
-                    segments: const [
-                      ButtonSegment(value: Gorunum.gun, label: Text(M.gorunumGun)),
-                      ButtonSegment(value: Gorunum.hafta, label: Text(M.gorunumHafta)),
-                      ButtonSegment(value: Gorunum.ay, label: Text(M.gorunumAy)),
-                    ],
-                    selected: {g},
-                    onSelectionChanged: (s) => k.gorunumDegistir(s.first),
-                  ),
-                ),
-                IconButton(tooltip: M.onceki, icon: const Icon(Icons.chevron_left), onPressed: () => _adim(-1)),
-                IconButton(tooltip: M.sonraki, icon: const Icon(Icons.chevron_right), onPressed: () => _adim(1)),
-              ]),
-            ),
-            Expanded(child: _icerik(g, dar, MediaQuery.sizeOf(context).width)),
-          ]),
+          body: _icerik(g, dar, MediaQuery.sizeOf(context).width),
         );
       },
     );

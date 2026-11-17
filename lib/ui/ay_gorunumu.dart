@@ -75,7 +75,7 @@ class _Hucre extends StatelessWidget {
       child: InkWell(
         onTap: () => kontrol.git(gun, gorunum: Gorunum.gun),
         child: Container(
-          decoration: BoxDecoration(border: Border(top: BorderSide(color: tema.dividerColor.withValues(alpha: .5)), left: BorderSide(color: tema.dividerColor.withValues(alpha: .3)))),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: tema.dividerColor.withValues(alpha: .2)))),
           padding: const EdgeInsets.all(2),
           child: LayoutBuilder(builder: (context, kisit) {
             final sol = buAy ? tema.colorScheme.onSurface : tema.colorScheme.onSurface.withValues(alpha: .38);
