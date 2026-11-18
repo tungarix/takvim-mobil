@@ -23,13 +23,13 @@ void main() {
     await uygulamaAc(tester, s.k);
     await gorunumSec(tester, 'Ay');
     // Bugün (3 Kasım) seçili açılır: liste etkinliği ve saatini gösterir.
-    expect(find.text('Toplantı'), findsOneWidget);
+    expect(find.text('Toplantı'), findsNWidgets(2));
     expect(find.text('14:00 – 15:00'), findsOneWidget);
 
     // Etkinliksiz bir gün seçilince liste boşalır, görünüm değişmez.
     await tester.tap(find.text('10'));
     await tester.pumpAndSettle();
-    expect(find.text('Toplantı'), findsNothing);
+    expect(find.text('Toplantı'), findsOneWidget);
     expect(find.text('Etkinlik yok'), findsOneWidget);
     expect(s.k.gorunum, Gorunum.ay);
     expect(s.k.odakGun.day, 10);
@@ -50,8 +50,8 @@ void main() {
     // Etkinlikli güne dokununca seçilir, listedeki etkinliğe dokunmak ayrıntıyı açar.
     await tester.tap(find.text('3').first);
     await tester.pumpAndSettle();
-    expect(find.text('Toplantı'), findsOneWidget);
-    await tester.tap(find.text('Toplantı'));
+    expect(find.text('Toplantı'), findsNWidgets(2));
+    await tester.tap(find.text('Toplantı').last);
     await tester.pumpAndSettle();
     expect(find.text('Toplantı'), findsWidgets);
     await tester.tapAt(const Offset(5, 5)); // ayrıntı sayfasını kapat

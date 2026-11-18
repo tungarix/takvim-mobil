@@ -1,5 +1,5 @@
 // Ay görünümü: Pazartesi başlangıçlı hafta satırları.
-// Telefon: çizgisiz sade ızgara + altta seçili günün listesi; güne dokunmak seçer, seçili güne
+// Telefon: çizgisiz sade ızgara (hücrede başlıklı şeritler, sığmazsa noktalar) + altta seçili günün listesi; güne dokunmak seçer, seçili güne
 // ikinci dokunuş (ya da "Güne git") gün görünümünü açar. Kart tutamacı yukarı sürüklenince ay
 // seçili günün haftasına daralır, aşağı sürüklenince açılır.
 // Geniş ekran: başlıklı şeritli hücreler (yer var, şerit okunur); dokunma gün görünümünü açar.
@@ -69,68 +69,174 @@ class _Hucre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final gun = veri.gun;
-    final bugunMu = gun == kontrol.bugun;
-    // Saatlilar başlangıca göre, tüm gün olanlar önde.
-    final ogeler = [
-      for (final t in veri.tumGun) (t.baslik, t.renk, true),
-      for (final y in veri.saatli) (y.oge.ornek.title, y.oge.renk, false),
-    ];
-    final adet = ogeler.length;
     return Semantics(
       button: true,
-      label: '${tarihTam(gun)}${veri.tatil == null ? '' : ', ${veri.tatil!.ad}'}${adet == 0 ? '' : ', $adet'}',
+      label: _hucreEtiketi(veri),
       excludeSemantics: true,
       child: InkWell(
-        onTap: () => kontrol.git(gun, gorunum: Gorunum.gun),
+        onTap: () => kontrol.git(veri.gun, gorunum: Gorunum.gun),
         child: Container(
-          decoration: BoxDecoration(border: Border(top: BorderSide(color: tema.dividerColor.withValues(alpha: .2)))),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: .2)))),
           padding: const EdgeInsets.all(2),
-          child: LayoutBuilder(builder: (context, kisit) {
-            final sol = buAy ? tema.colorScheme.onSurface : tema.colorScheme.onSurface.withValues(alpha: .38);
-            final sayi = Container(
-              width: 24,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: bugunMu ? tema.colorScheme.primary : (veri.tatil != null ? tema.colorScheme.tertiaryContainer : null)),
-              child: Text('${gun.day}',
-                  style: tema.textTheme.labelMedium?.copyWith(color: bugunMu ? tema.colorScheme.onPrimary : (veri.tatil != null ? tema.colorScheme.onTertiaryContainer : sol), fontWeight: veri.tatil != null ? FontWeight.w700 : null)),
-            );
-            // Geniş hücrede başlıklı şerit, dar hücrede nokta.
-            final serit = kisit.maxWidth >= 84;
-            final kalan = kisit.maxHeight - 28;
-            if (serit) {
-              final n = (kalan / 17).floor().clamp(0, 4);
-              final gosterilen = adet > n && n > 0 ? n - 1 : n;
-              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Align(alignment: Alignment.centerLeft, child: sayi),
-                for (final (baslik, renk, _) in ogeler.take(gosterilen))
-                  Container(
-                    height: 15,
-                    margin: const EdgeInsets.only(top: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    alignment: Alignment.centerLeft,
-                    decoration: BoxDecoration(color: renk, borderRadius: BorderRadius.circular(3)),
-                    child: Text(baslik, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, color: yaziRengi(renk))),
-                  ),
-                if (adet > gosterilen && n > 0) Padding(padding: const EdgeInsets.only(top: 1), child: Text('+${adet - gosterilen}', style: tema.textTheme.labelSmall)),
-              ]);
-            }
-            final nokta = ((kisit.maxWidth - 2) / 9).floor().clamp(1, 5);
-            return Column(children: [
-              sayi,
-              const SizedBox(height: 3),
-              if (kalan > 6)
-                Wrap(spacing: 3, runSpacing: 3, alignment: WrapAlignment.center, children: [
-                  for (final (_, renk, _) in ogeler.take(adet > nokta ? nokta - 1 : nokta)) Container(width: 6, height: 6, decoration: BoxDecoration(color: renk, shape: BoxShape.circle)),
-                  if (adet > nokta) Text('+${adet - nokta + 1}', style: const TextStyle(fontSize: 8, height: .75)),
-                ]),
-            ]);
-          }),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Align(alignment: Alignment.centerLeft, child: _GunSayisi(veri: veri, bugunMu: veri.gun == kontrol.bugun, buAy: buAy)),
+            const SizedBox(height: 2),
+            Expanded(child: _Seritler(kontrol: kontrol, veri: veri, buAy: buAy)),
+          ]),
         ),
       ),
     );
+  }
+}
+
+String _hucreEtiketi(GunVerisi veri) {
+  final basliklar = [for (final t in veri.tumGun) t.baslik, for (final y in veri.saatli) y.oge.ornek.title];
+  final tatil = veri.tatil == null ? '' : ', ${veri.tatil!.ad}';
+  final adet = basliklar.isEmpty ? '' : ', ${basliklar.length}: ${basliklar.join(', ')}';
+  return '${tarihTam(veri.gun)}$tatil$adet';
+}
+
+class _GunSayisi extends StatelessWidget {
+  const _GunSayisi({required this.veri, required this.bugunMu, required this.buAy});
+  final GunVerisi veri;
+  final bool bugunMu, buAy;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final renk = tema.colorScheme;
+    final tatil = veri.tatil != null;
+    final yazi = bugunMu ? renk.onPrimary : (tatil ? renk.error : renk.onSurface).withValues(alpha: buAy ? 1 : .38);
+    return Container(
+      width: 24,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: bugunMu ? BoxDecoration(color: renk.primary, borderRadius: BorderRadius.circular(8)) : null,
+      child: Text('${veri.gun.day}', style: tema.textTheme.labelMedium?.copyWith(color: yazi, fontWeight: bugunMu || tatil ? FontWeight.w700 : null)),
+    );
+  }
+}
+
+/// Hücrenin kalan alanına sığdığı kadar şerit; "+N"; hiç sığmazsa renkli noktalar.
+/// Sıra: resmi tatil, tüm gün (doğum günü/görev dahil), saatliler (başlangıca göre).
+/// Saat yalnız geniş hücrede başlığa eklenir (telefonda yer dar, başlık daha değerli).
+class _Seritler extends StatelessWidget {
+  const _Seritler({required this.kontrol, required this.veri, required this.buAy});
+  final TakvimKontrol kontrol;
+  final GunVerisi veri;
+  final bool buAy;
+
+  static const _yuk = 14.0, _ara = 2.0, _artiYuk = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final renk = Theme.of(context).colorScheme;
+    return LayoutBuilder(builder: (context, kisit) {
+      final genis = kisit.maxWidth >= 80;
+      final seritler = <_Serit>[
+        if (veri.tatil != null) _Serit(veri.tatil!.ad, renk.error, tatil: true),
+        for (final t in veri.tumGun)
+          () {
+            final pasta = t.ornek != null && dogumGunuBilgisi(kontrol, t.ornek!) != null;
+            final ad = pasta && !genis && t.baslik.endsWith(M.dogumGunuSonek) ? t.baslik.substring(0, t.baslik.length - M.dogumGunuSonek.length) : t.baslik;
+            return _Serit(ad, t.renk, pasta: pasta);
+          }(),
+        for (final y in ([...veri.saatli]..sort((a, b) => a.oge.bas.compareTo(b.oge.bas))))
+          _Serit('${genis && !y.oge.oncedenGelir ? '${saatMetni(y.oge.bas)} ' : ''}${y.oge.ornek.title}', y.oge.renk),
+      ];
+      final t = seritler.length;
+      if (t == 0) return const SizedBox.shrink();
+      var k = t;
+      while (k > 0 && k * (_yuk + _ara) + (t > k ? _artiYuk : 0) > kisit.maxHeight) {
+        k--;
+      }
+      if (k == 0) return _Noktalar(renkler: [for (final s in seritler) s.renk], genislik: kisit.maxWidth, yer: kisit.maxHeight);
+      return ClipRect(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (final s in seritler.take(k))
+            Padding(padding: const EdgeInsets.only(bottom: _ara), child: SizedBox(height: _yuk, child: _SeritCubugu(s, ellipsis: genis))),
+          if (t > k)
+            SizedBox(height: _artiYuk, child: Text('+${t - k}', style: TextStyle(fontSize: 9, height: 1.2, color: renk.onSurfaceVariant.withValues(alpha: buAy ? 1 : .6)))),
+        ]),
+      );
+    });
+  }
+}
+
+class _Serit {
+  const _Serit(this.metin, this.renk, {this.tatil = false, this.pasta = false});
+  final String metin;
+  final Color renk;
+  final bool tatil, pasta;
+}
+
+class _SeritCubugu extends StatelessWidget {
+  const _SeritCubugu(this.s, {required this.ellipsis});
+  final _Serit s;
+  final bool ellipsis;
+
+  @override
+  Widget build(BuildContext context) {
+    final renk = Theme.of(context).colorScheme;
+    final yazi = s.tatil ? renk.error : renk.onSurface;
+    final metin = Text(s.metin,
+        maxLines: 1, softWrap: false, overflow: ellipsis ? TextOverflow.ellipsis : TextOverflow.fade, style: TextStyle(fontSize: 10, height: 1.1, color: yazi));
+    final icerik = Row(children: [
+      if (s.pasta) Padding(padding: const EdgeInsets.only(right: 2), child: Icon(Icons.cake_outlined, size: 9, color: yazi)),
+      Expanded(child: metin),
+    ]);
+    if (s.tatil) {
+      return CustomPaint(painter: _KesikKenar(s.renk), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: icerik));
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: ColoredBox(
+        color: s.renk.withValues(alpha: .24),
+        child: Row(children: [
+          Container(width: 2.5, color: s.renk),
+          Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: icerik)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _KesikKenar extends CustomPainter {
+  _KesikKenar(this.renk);
+  final Color renk;
+
+  @override
+  void paint(Canvas canvas, Size boyut) {
+    final yol = Path()..addRRect(RRect.fromRectAndRadius((Offset.zero & boyut).deflate(.5), const Radius.circular(4)));
+    final boya = Paint()
+      ..color = renk.withValues(alpha: .8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final m in yol.computeMetrics()) {
+      for (var d = 0.0; d < m.length; d += 5) {
+        canvas.drawPath(m.extractPath(d, d + 3), boya);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_KesikKenar eski) => eski.renk != renk;
+}
+
+class _Noktalar extends StatelessWidget {
+  const _Noktalar({required this.renkler, required this.genislik, required this.yer});
+  final List<Color> renkler;
+  final double genislik, yer;
+
+  @override
+  Widget build(BuildContext context) {
+    if (yer < 6) return const SizedBox.shrink();
+    final sigan = ((genislik - 2) / 9).floor().clamp(1, 5);
+    final adet = renkler.length;
+    return Wrap(spacing: 3, runSpacing: 3, alignment: WrapAlignment.center, children: [
+      for (final r in renkler.take(adet > sigan ? sigan - 1 : sigan)) Container(width: 6, height: 6, decoration: BoxDecoration(color: r, shape: BoxShape.circle)),
+      if (adet > sigan) Text('+${adet - sigan + 1}', style: const TextStyle(fontSize: 8, height: .75)),
+    ]);
   }
 }
 
@@ -175,10 +281,10 @@ class _AyDarDurumu extends State<_AyDar> {
             ),
           ),
       ]),
-      // Satır yüksekliği: kalan yüksekliğin ~%58'i satırlara bölünür, 52-68 aralığında kalır.
+      // Satır yüksekliği: kalan yüksekliğin ~%60'ı satırlara bölünür (60-78); daralmış haftada şeritler için 130.
       Expanded(
         child: LayoutBuilder(builder: (context, kisit) {
-          final h = (kisit.maxHeight * .58 / satir).clamp(52.0, 68.0);
+          final h = _hafta ? 130.0 : (kisit.maxHeight * .6 / satir).clamp(60.0, 78.0);
           return Column(children: [
             for (var r = 0; r < satir; r++)
               if (!_hafta || r == seciliSatir)
@@ -212,48 +318,25 @@ class _DarHucre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final renk = tema.colorScheme;
+    final renk = Theme.of(context).colorScheme;
     final gun = veri.gun;
-    final bugunMu = gun == kontrol.bugun;
-    final renkler = [
-      for (final t in veri.tumGun) t.renk,
-      for (final y in veri.saatli) y.oge.renk,
-    ];
-    final adet = renkler.length;
-    final tatil = veri.tatil != null;
-    final yazi = bugunMu ? renk.onPrimary : (tatil ? renk.tertiary.withValues(alpha: buAy ? 1 : .4) : (buAy ? renk.onSurface : renk.onSurface.withValues(alpha: .25)));
     return Semantics(
       button: true,
       selected: secili,
-      label: '${tarihTam(gun)}${veri.tatil == null ? '' : ', ${veri.tatil!.ad}'}${adet == 0 ? '' : ', $adet'}',
+      label: _hucreEtiketi(veri),
       excludeSemantics: true,
       child: InkWell(
         // Seçili güne ikinci dokunuş gün görünümünü açar.
         onTap: () => secili ? kontrol.git(gun, gorunum: Gorunum.gun) : kontrol.odakAyarla(gun),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Container(
-              width: 46,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: bugunMu ? renk.primary : null,
-                border: secili && !bugunMu ? Border.all(color: renk.primary, width: 1.5) : null,
-              ),
-              child: Stack(alignment: Alignment.center, children: [
-                Text('${gun.day}', style: tema.textTheme.titleLarge?.copyWith(color: yazi, fontWeight: bugunMu || tatil ? FontWeight.w700 : FontWeight.w500)),
-                Positioned(
-                  bottom: 6,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    for (final r in renkler.take(3))
-                      Container(width: 5, height: 5, margin: const EdgeInsets.symmetric(horizontal: 1.5), decoration: BoxDecoration(color: bugunMu ? renk.onPrimary : r, shape: BoxShape.circle)),
-                  ]),
-                ),
-              ]),
-            ),
-          ),
+        child: Container(
+          margin: const EdgeInsets.all(1),
+          padding: const EdgeInsets.fromLTRB(2, 3, 2, 1),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: secili ? Border.all(color: renk.primary, width: 1.5) : null),
+          child: Column(children: [
+            _GunSayisi(veri: veri, bugunMu: gun == kontrol.bugun, buAy: buAy),
+            const SizedBox(height: 2),
+            Expanded(child: _Seritler(kontrol: kontrol, veri: veri, buAy: buAy)),
+          ]),
         ),
       ),
     );
@@ -281,7 +364,7 @@ class _GunListesi extends StatelessWidget {
 
     final tatil = veri.tatil;
     final satirlar = <Widget>[
-      if (tatil != null) _Satir(renk: tema.colorScheme.tertiary, baslik: tatil.ad, saat: tatil.yarim ? M.resmiTatilYarim : M.resmiTatil, onTap: null),
+      if (tatil != null) _Satir(renk: tema.colorScheme.error, baslik: tatil.ad, saat: tatil.yarim ? M.resmiTatilYarim : M.resmiTatil, onTap: null),
       for (final t in veri.tumGun)
         _Satir(
           renk: t.renk,

@@ -68,7 +68,7 @@ void main() {
     expect(e.start, YerelZaman('Europe/Istanbul').utc(DateTime.utc(2026, 11, 3))); // yıl yok: bugünün tarihi
     await ayGorunumu(tester);
     expect(find.text('Ayşe doğum günü'), findsOneWidget);
-    expect(find.byIcon(Icons.cake_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.cake_outlined), findsNWidgets(2));
     expect(find.textContaining('yaşına'), findsNothing); // yıl bilinmiyor
   });
 
@@ -85,7 +85,7 @@ void main() {
     await uygulamaAc(tester, s.k);
     await ayGorunumu(tester);
     expect(find.text('36 yaşına giriyor'), findsOneWidget);
-    expect(find.byIcon(Icons.cake_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.cake_outlined), findsNWidgets(2));
     expect(find.text('Tüm gün'), findsOneWidget); // Bayram
     await tester.tap(find.text('Ali doğum günü'));
     await tester.pumpAndSettle();

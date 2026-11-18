@@ -39,7 +39,7 @@ void main() {
 
     await _gorunumSec(tester, 'Ay');
     expect(find.text('Kasım 2026'), findsOneWidget);
-    expect(find.text('Toplantı'), findsOneWidget); // geniş ekranda başlıklı şerit
+    expect(find.textContaining('Toplantı'), findsOneWidget); // geniş ekranda saatli başlıklı şerit
     await bekle(tester, () => s.k.ayarlar.gorunum == 'ay');
     expect(s.k.ayarlar.gorunum, 'ay');
 

@@ -46,7 +46,7 @@ void main() {
     final s = await kontrolKur(tester);
     s.k.git(DateTime.utc(2026, 10, 29), gorunum: Gorunum.ay);
     await uygulamaAc(tester, s.k);
-    expect(find.text('Cumhuriyet Bayramı'), findsOneWidget);
+    expect(find.text('Cumhuriyet Bayramı'), findsNWidgets(2));
     expect(find.text('Resmi tatil'), findsOneWidget);
     expect(s.k.veri.events, isEmpty);
     expect(disaAktarMetin(s.k.veri, const CihazBilgisi(id: 'x', name: 'y')), isNot(contains('Cumhuriyet')));
