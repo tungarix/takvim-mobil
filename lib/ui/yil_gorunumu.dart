@@ -44,7 +44,7 @@ class _Ay extends StatelessWidget {
     final satir = (ilk.difference(bas).inDays + gunSayisi + 6) ~/ 7;
     final kucuk = tema.textTheme.labelSmall?.copyWith(fontSize: 10, height: 1.1);
 
-    Widget hucre(String? metin, {bool bugunMu = false, Color? renkli}) => Expanded(
+    Widget hucre(String? metin, {bool bugunMu = false, Color? renkli, bool kalin = false}) => Expanded(
           child: Container(
             height: 16,
             margin: const EdgeInsets.all(.5),
@@ -52,7 +52,7 @@ class _Ay extends StatelessWidget {
             decoration: bugunMu ? BoxDecoration(color: renk.primary, borderRadius: BorderRadius.circular(4)) : null,
             child: metin == null
                 ? null
-                : Text(metin, style: kucuk?.copyWith(color: bugunMu ? renk.onPrimary : renkli ?? renk.onSurface, fontWeight: bugunMu ? FontWeight.w700 : null)),
+                : Text(metin, style: kucuk?.copyWith(color: bugunMu ? renk.onPrimary : renkli ?? renk.onSurface, fontWeight: bugunMu || kalin ? FontWeight.w700 : null)),
           ),
         );
 
@@ -78,7 +78,8 @@ class _Ay extends StatelessWidget {
                   () {
                     final g = gunEkle(bas, r * 7 + c);
                     if (g.month != ay) return hucre(null);
-                    return hucre('${g.day}', bugunMu: g == bugun, renkli: c >= 5 ? renk.primary : null);
+                    final tatil = kontrol.tatil(g) != null;
+                    return hucre('${g.day}', bugunMu: g == bugun, renkli: tatil ? renk.tertiary : (c >= 5 ? renk.primary : null), kalin: tatil);
                   }(),
               ]),
           ]),

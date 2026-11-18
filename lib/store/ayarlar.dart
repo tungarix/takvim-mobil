@@ -42,6 +42,9 @@ class Ayarlar {
     return g is bool ? g : null;
   }
 
+  /// Resmi tatilleri göster (varsayılan açık); yalnız görünümü etkiler.
+  bool get resmiTatiller => _m['resmi_tatiller'] != false;
+
   /// Güncelleyicinin saklı durumu (son denetim, ETag, bulunan sürüm, hata kodu); kopya döner.
   Map<String, Object?> get guncellemeKaydi {
     final g = _m['guncelleme'];
@@ -61,6 +64,8 @@ class Ayarlar {
   Future<void> gorunumYaz(String g) => _yaz({'gorunum': g});
 
   Future<void> temaYaz(String t) => _yaz({'tema': t});
+
+  Future<void> resmiTatillerYaz(bool acik) => _yaz({'resmi_tatiller': acik});
 
   Future<void> guncellemeDenetimiYaz(bool acik) => _yaz({'guncelleme_denetimi': acik});
 

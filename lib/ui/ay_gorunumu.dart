@@ -80,7 +80,7 @@ class _Hucre extends StatelessWidget {
     final adet = ogeler.length;
     return Semantics(
       button: true,
-      label: adet == 0 ? tarihTam(gun) : '${tarihTam(gun)}, $adet',
+      label: '${tarihTam(gun)}${veri.tatil == null ? '' : ', ${veri.tatil!.ad}'}${adet == 0 ? '' : ', $adet'}',
       excludeSemantics: true,
       child: InkWell(
         onTap: () => kontrol.git(gun, gorunum: Gorunum.gun),
@@ -93,8 +93,9 @@ class _Hucre extends StatelessWidget {
               width: 24,
               height: 24,
               alignment: Alignment.center,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: bugunMu ? tema.colorScheme.primary : null),
-              child: Text('${gun.day}', style: tema.textTheme.labelMedium?.copyWith(color: bugunMu ? tema.colorScheme.onPrimary : sol)),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: bugunMu ? tema.colorScheme.primary : (veri.tatil != null ? tema.colorScheme.tertiaryContainer : null)),
+              child: Text('${gun.day}',
+                  style: tema.textTheme.labelMedium?.copyWith(color: bugunMu ? tema.colorScheme.onPrimary : (veri.tatil != null ? tema.colorScheme.onTertiaryContainer : sol), fontWeight: veri.tatil != null ? FontWeight.w700 : null)),
             );
             // Geniş hücrede başlıklı şerit, dar hücrede nokta.
             final serit = kisit.maxWidth >= 84;
@@ -220,11 +221,12 @@ class _DarHucre extends StatelessWidget {
       for (final y in veri.saatli) y.oge.renk,
     ];
     final adet = renkler.length;
-    final yazi = bugunMu ? renk.onPrimary : (buAy ? renk.onSurface : renk.onSurface.withValues(alpha: .25));
+    final tatil = veri.tatil != null;
+    final yazi = bugunMu ? renk.onPrimary : (tatil ? renk.tertiary.withValues(alpha: buAy ? 1 : .4) : (buAy ? renk.onSurface : renk.onSurface.withValues(alpha: .25)));
     return Semantics(
       button: true,
       selected: secili,
-      label: adet == 0 ? tarihTam(gun) : '${tarihTam(gun)}, $adet',
+      label: '${tarihTam(gun)}${veri.tatil == null ? '' : ', ${veri.tatil!.ad}'}${adet == 0 ? '' : ', $adet'}',
       excludeSemantics: true,
       child: InkWell(
         // Seçili güne ikinci dokunuş gün görünümünü açar.
@@ -241,7 +243,7 @@ class _DarHucre extends StatelessWidget {
                 border: secili && !bugunMu ? Border.all(color: renk.primary, width: 1.5) : null,
               ),
               child: Stack(alignment: Alignment.center, children: [
-                Text('${gun.day}', style: tema.textTheme.titleLarge?.copyWith(color: yazi, fontWeight: bugunMu ? FontWeight.w700 : FontWeight.w500)),
+                Text('${gun.day}', style: tema.textTheme.titleLarge?.copyWith(color: yazi, fontWeight: bugunMu || tatil ? FontWeight.w700 : FontWeight.w500)),
                 Positioned(
                   bottom: 6,
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -277,7 +279,9 @@ class _GunListesi extends StatelessWidget {
       return yas == null ? M.tumGun : M.yasinaGiriyor(yas);
     }
 
+    final tatil = veri.tatil;
     final satirlar = <Widget>[
+      if (tatil != null) _Satir(renk: tema.colorScheme.tertiary, baslik: tatil.ad, saat: tatil.yarim ? M.resmiTatilYarim : M.resmiTatil, onTap: null),
       for (final t in veri.tumGun)
         _Satir(
           renk: t.renk,
@@ -340,7 +344,7 @@ class _Satir extends StatelessWidget {
   final Color renk;
   final bool pasta;
   final String baslik, saat;
-  final VoidCallback onTap;
+  final VoidCallback? onTap; // null: salt okunur (resmi tatil)
 
   @override
   Widget build(BuildContext context) {

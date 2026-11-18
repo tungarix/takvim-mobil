@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../app/kontrol.dart';
 import '../core/models.dart';
 import '../core/recurrence.dart';
+import '../core/resmi_tatil.dart';
 import '../core/yerel_zaman.dart';
 import '../core/yerlesim.dart';
 import 'bicim.dart';
@@ -35,8 +36,11 @@ class TumGunOgesi {
 }
 
 class GunVerisi {
-  const GunVerisi(this.gun, this.saatli, this.tumGun);
+  const GunVerisi(this.gun, this.saatli, this.tumGun, [this.tatil]);
   final DateTime gun;
+
+  /// Resmi tatil (salt okunur; etkinlik listelerine karışmaz).
+  final ResmiTatil? tatil;
   final List<YerlesimOgesi<SaatliParca>> saatli;
   final List<TumGunOgesi> tumGun;
 }
@@ -87,6 +91,7 @@ List<GunVerisi> gunVerileri(TakvimKontrol k, List<DateTime> gunler) {
           d,
           yerlestir<SaatliParca>(parcalar, (p) => p.bas, (p) => p.bit, esitlikKirici: (a, b) => a.ornek.eventUid.compareTo(b.ornek.eventUid)),
           tumGun,
+          k.tatil(d),
         );
       }(),
   ];

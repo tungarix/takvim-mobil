@@ -16,6 +16,7 @@ import '../platform/bildirim.dart';
 import '../platform/dosya_servisi.dart';
 import '../guncelleme/hizmet.dart';
 import '../platform/kopru.dart';
+import '../core/resmi_tatil.dart';
 import '../store/ayarlar.dart';
 import '../store/takvim_store.dart';
 import '../sync/export.dart';
@@ -180,6 +181,18 @@ class TakvimKontrol extends ChangeNotifier {
     } catch (e) {
       mesaj(M.hata(e));
     }
+  }
+
+  /// Gün için resmi tatil (ayar kapalıysa null); salt okunur, Veri'ye girmez.
+  ResmiTatil? tatil(DateTime gun) => ayarlar.resmiTatiller ? resmiTatilBul(gun) : null;
+
+  Future<void> resmiTatilDegistir(bool acik) async {
+    try {
+      await ayarlar.resmiTatillerYaz(acik);
+    } catch (e) {
+      mesaj(M.hata(e));
+    }
+    notifyListeners();
   }
 
   Future<void> gorunumDegistir(Gorunum g) async {

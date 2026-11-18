@@ -383,6 +383,11 @@ class M {
   static const temaSistem = 'Sistem';
   static const temaKoyu = 'Koyu';
   static const temaAcik = 'Açık';
+  static const resmiTatilGoster = 'Resmi tatilleri göster';
+  static const resmiTatilAciklama = 'Türkiye resmi tatilleri takvimde işaretlenir; etkinlik değildir, yalnız görünüm.';
+  static const resmiTatil = 'Resmi tatil';
+  static const resmiTatilYarim = 'Resmi tatil · yarım gün';
+  static String tatilEtiketi(String ad, bool yarim) => yarim ? '$ad (yarım gün)' : ad;
   static String surum(String s) => 'Sürüm $s';
   static const verilerYalnizTelefonda =
       'Veriler yalnız bu telefonda tutulur, hesap gerekmez. Uygulama yalnız sen "Wi-Fi ile eşleştir"i kullanınca '

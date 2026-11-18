@@ -50,6 +50,13 @@ class AyarlarSayfasi extends StatelessWidget {
                 onSelectionChanged: (s) => kontrol.temaDegistir(s.first),
               ),
             ),
+            SwitchListTile(
+              secondary: const Icon(Icons.flag_outlined),
+              title: const Text(M.resmiTatilGoster),
+              subtitle: const Text(M.resmiTatilAciklama),
+              value: kontrol.ayarlar.resmiTatiller,
+              onChanged: kontrol.resmiTatilDegistir,
+            ),
             baslik(M.hatirlaticiBolumu),
             _HatirlaticiBolumu(kontrol: kontrol),
             baslik(M.senkronBolumu),

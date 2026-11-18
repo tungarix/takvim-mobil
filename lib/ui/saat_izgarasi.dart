@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../app/kontrol.dart';
+import '../core/resmi_tatil.dart';
 import '../core/yerlesim.dart';
 import 'bicim.dart';
 import 'etkinlik_islemleri.dart';
@@ -78,7 +79,7 @@ class _SaatIzgarasiDurumu extends State<SaatIzgarasi> {
     final tema = Theme.of(context);
     final gunler = widget.gunler;
     final veriler = gunVerileri(k, gunler);
-    final enCokSerit = veriler.map((g) => g.tumGun.length).fold(0, (a, b) => a > b ? a : b);
+    final enCokSerit = veriler.map((g) => g.tumGun.length + (g.tatil == null ? 0 : 1)).fold(0, (a, b) => a > b ? a : b);
     final seritYuk = enCokSerit == 0 ? 0.0 : (enCokSerit > _seritEnFazla ? _seritEnFazla : enCokSerit) * _seritSatiri + 6;
     final ustYuk = _baslikYuksekligi + seritYuk;
 
@@ -209,11 +210,15 @@ class _TumGunSeridi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ogeler = veri.tumGun;
-    final fazla = ogeler.length - _seritEnFazla;
-    final gosterilen = fazla > 0 ? ogeler.take(_seritEnFazla - 1).toList() : ogeler;
+    final tatil = veri.tatil;
+    final fazla = ogeler.length + (tatil == null ? 0 : 1) - _seritEnFazla;
+    // Tatil etiketi en üstte yer tutar; kalan şerit ögeleri ondan sonra sığdığı kadar.
+    final sigan = (fazla > 0 ? _seritEnFazla - 1 : _seritEnFazla) - (tatil == null ? 0 : 1);
+    final gosterilen = ogeler.take(sigan).toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(1, 3, 1, 3),
       child: Column(children: [
+        if (tatil != null) SizedBox(height: _seritSatiri, child: _TatilEtiketi(tatil: tatil)),
         for (final o in gosterilen) SizedBox(height: _seritSatiri, child: _TumGunChip(kontrol: kontrol, oge: o)),
         if (fazla > 0)
           SizedBox(
@@ -221,6 +226,35 @@ class _TumGunSeridi extends StatelessWidget {
             child: Center(child: Text('+${fazla + 1}', style: Theme.of(context).textTheme.labelSmall)),
           ),
       ]),
+    );
+  }
+}
+
+/// Resmi tatil: soluk, kenarlı, dokunulamaz etiket (etkinlikten ayrışsın).
+class _TatilEtiketi extends StatelessWidget {
+  const _TatilEtiketi({required this.tatil});
+  final ResmiTatil tatil;
+
+  @override
+  Widget build(BuildContext context) {
+    final renk = Theme.of(context).colorScheme;
+    final metin = M.tatilEtiketi(tatil.ad, tatil.yarim);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Semantics(
+        label: '${M.resmiTatil}: $metin',
+        excludeSemantics: true,
+        child: Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: renk.tertiaryContainer.withValues(alpha: .25),
+            border: Border.all(color: renk.tertiary.withValues(alpha: .6)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(metin, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: renk.onSurfaceVariant)),
+        ),
+      ),
     );
   }
 }
