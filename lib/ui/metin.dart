@@ -96,6 +96,24 @@ class M {
     return birim(dk, 'dakika');
   }
 
+  // --- doğum günü
+  static const turSecimi = 'Ekleme türü';
+  static const turEtkinlik = 'Etkinlik';
+  static const turDogumGunu = 'Doğum günü';
+  static const kisiAdi = 'Kişi adı';
+  static const adGerekli = 'Ad gerekli';
+  static const dogumTarihi = 'Tarih';
+  static const dogumYiliBiliniyor = 'Doğum yılı biliniyor';
+  static const dogumGunuSonek = ' doğum günü';
+  static String dogumGunuBasligi(String ad) => '$ad$dogumGunuSonek';
+  static String yasinaGiriyor(int n) => '$n yaşına giriyor';
+  /// Tüm gün etkinliğinde dakika, yerel gece yarısından geriye sayılır: 900 = bir önceki gün 09:00.
+  static String tumGunHatirlaticiMetni(int dk) => switch (dk) {
+        0 => 'O gün 00:00',
+        900 => 'Önceki gün 09:00',
+        _ => hatirlaticiMetni(dk),
+      };
+
   // --- kapsam (tekrarlı düzenleme/silme)
   static const kapsamDuzenleBaslik = 'Tekrarlı etkinliği düzenle';
   static const kapsamSilBaslik = 'Tekrarlı etkinliği sil';

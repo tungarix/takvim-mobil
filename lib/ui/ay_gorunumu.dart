@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../app/kontrol.dart';
 import '../core/yerel_zaman.dart';
 import 'bicim.dart';
+import 'dogum_gunu.dart';
 import 'etkinlik_islemleri.dart';
 import 'gorev_islemleri.dart';
 import 'gun_verisi.dart';
@@ -271,12 +272,18 @@ class _GunListesi extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final soluk = tema.colorScheme.onSurfaceVariant;
+    String tumGunAlt(TumGunOgesi t) {
+      final yas = t.ornek == null ? null : dogumGunuBilgisi(kontrol, t.ornek!)?.yas;
+      return yas == null ? M.tumGun : M.yasinaGiriyor(yas);
+    }
+
     final satirlar = <Widget>[
       for (final t in veri.tumGun)
         _Satir(
           renk: t.renk,
           baslik: t.baslik,
-          saat: M.tumGun,
+          saat: tumGunAlt(t),
+          pasta: t.ornek != null && dogumGunuBilgisi(kontrol, t.ornek!) != null,
           onTap: () => t.gorev != null ? gorevEylemleri(context, kontrol, t.gorev!) : etkinlikDetayGoster(context, kontrol, t.ornek!),
         ),
       for (final y in veri.saatli)
@@ -329,8 +336,9 @@ class _GunListesi extends StatelessWidget {
 }
 
 class _Satir extends StatelessWidget {
-  const _Satir({required this.renk, required this.baslik, required this.saat, required this.onTap});
+  const _Satir({required this.renk, required this.baslik, required this.saat, required this.onTap, this.pasta = false});
   final Color renk;
+  final bool pasta;
   final String baslik, saat;
   final VoidCallback onTap;
 
@@ -352,6 +360,7 @@ class _Satir extends StatelessWidget {
                 Text(saat, style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.onSurfaceVariant)),
               ]),
             ),
+            if (pasta) Icon(Icons.cake_outlined, size: 20, color: renk), // süs: anlam başlıkta ve alt metinde
           ]),
         ),
       ),

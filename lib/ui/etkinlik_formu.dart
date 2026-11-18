@@ -14,10 +14,13 @@ import '../core/recurrence.dart';
 import '../core/veri.dart';
 import '../core/yerel_zaman.dart';
 import 'bicim.dart';
+import 'dogum_gunu.dart';
 import 'etkinlik_islemleri.dart';
 import 'metin.dart';
 
 const _hatirlaticiSecenekleri = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080];
+// Tüm gün etkinliği gece yarısı başlar: 900 = önceki gün 09:00 (sabahtan sonrası "o gün" ifade edilemez, süre >= 0).
+const _dogumHatirlaticiSecenekleri = [900, 0, 1440, 2880, 10080];
 
 class EtkinlikFormu extends StatefulWidget {
   const EtkinlikFormu({super.key, required this.kontrol, this.ornek, this.kapsam = Kapsam.tumu, this.baslangic});
@@ -50,6 +53,11 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
   Set<int> _ekGunler = {}; // başlangıç gününe ek haftalık günler
   bool _ozelTekrar = false;
   late Set<int> _hat;
+  // Doğum günü modu (yalnız yeni eklemede): ayrı hatırlatıcı kümesi, tür değişince diğerini bozmaz.
+  bool _dogumGunu = false;
+  final Set<int> _dgHat = {900};
+  late DateTime _dgTarih; // yıl yalnız _dgYilVar iken anlamlı
+  bool _dgYilVar = false;
   late String _ilkTekrar;
   late int _ilkBasHaftaGunu;
   late Set<int> _ilkEk;
@@ -87,8 +95,10 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
       _takvimUid = k.varsayilanTakvim!.uid;
       _tumGun = false;
       _hat = {};
+      _dgTarih = gunDuvar(_bas);
     } else {
       _tumGun = e.allDay;
+      _dgTarih = gunDuvar(o.start);
       if (e.allDay) {
         final tz = YerelZaman(e.tzid);
         _bas = gunDuvar(tz.duvar(o.start));
@@ -156,7 +166,28 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
 
   String? _bos(String s) => s.trim().isEmpty ? null : s.trim();
 
+  Future<void> _dogumGunuKaydet() async {
+    if (!_anahtar.currentState!.validate()) return;
+    final etz = _etkinlikTz;
+    final kayit = dogumGunuKur(ay: _dgTarih.month, gun: _dgTarih.day, yil: _dgYilVar ? _dgTarih.year : null, bugun: k.bugun);
+    final basUtc = etz.utc(kayit.baslangic);
+    final bitUtc = etz.utc(gunEkle(kayit.baslangic, 1));
+    final baslik = M.dogumGunuBasligi(_baslik.text.trim());
+    setState(() => _kaydediyor = true);
+    final ok = await k.yap((v) => v.addEvent(Event(
+          uid: '${yeniUuid()}@takvim.local', calendarUid: _takvimUid, title: baslik, start: basUtc, end: bitUtc, tzid: etz.tzid,
+          allDay: true, rrule: kayit.rrule, reminders: {..._dgHat}, createdAt: v.simdi, updatedAt: v.simdi,
+        )));
+    if (!mounted) return;
+    setState(() => _kaydediyor = false);
+    if (ok) {
+      k.odakAyarla(kayit.baslangic);
+      Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _kaydet() async {
+    if (_dogumGunu) return _dogumGunuKaydet();
     setState(() => _bitisHata = null);
     if (!_anahtar.currentState!.validate()) return;
     final etz = _etkinlikTz;
@@ -273,6 +304,8 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: Semantics(header: true, child: Text(_yeni ? M.etkinlikEkle : M.etkinligiDuzenle, style: tema.textTheme.headlineLarge)),
           ),
+          if (_yeni) _turSecici(),
+          if (_dogumGunu) ..._dogumGunuKartlari() else ...[
           _Kart(children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -334,17 +367,7 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
           ]),
           if (!_buOrnek) ...[
             _Kart(children: [
-              _Satir(
-                etiket: M.takvim,
-                deger: takvim?.name ?? '',
-                renk: takvim == null ? null : renkOku(takvim.color),
-                onTap: () async {
-                  final u = await _secenekSec<String>([
-                    for (final c in takvimler) (c.uid, c.name, renkOku(c.color)),
-                  ], _takvimUid);
-                  if (u != null) setState(() => _takvimUid = u);
-                },
-              ),
+              _takvimSatiri(takvimler, takvim),
               ..._tekrarSatirlari(),
             ]),
             _hatirlaticiKarti(tema),
@@ -366,10 +389,79 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
                 ),
               ),
           ]),
+          ],
         ]),
       ),
     );
   }
+
+  Widget _takvimSatiri(List<Calendar> takvimler, Calendar? takvim) => _Satir(
+        etiket: M.takvim,
+        deger: takvim?.name ?? '',
+        renk: takvim == null ? null : renkOku(takvim.color),
+        onTap: () async {
+          final u = await _secenekSec<String>([
+            for (final c in takvimler) (c.uid, c.name, renkOku(c.color)),
+          ], _takvimUid);
+          if (u != null) setState(() => _takvimUid = u);
+        },
+      );
+
+  /// Doğum günü: yıl kapalıyken seçici artık yılda açılır (29 Şubat seçilebilsin), yıl açıkken gelecek kapalı.
+  Future<void> _dgTarihSec() async {
+    final bugun = DateTime(k.bugun.year, k.bugun.month, k.bugun.day);
+    var ilk = DateTime(_dgYilVar ? _dgTarih.year : 2024, _dgTarih.month, _dgTarih.day);
+    if (_dgYilVar && ilk.isAfter(bugun)) ilk = bugun;
+    final r = await showDatePicker(context: context, initialDate: ilk, firstDate: DateTime(1900), lastDate: _dgYilVar ? bugun : DateTime(2100));
+    if (r != null && mounted) setState(() => _dgTarih = DateTime.utc(r.year, r.month, r.day));
+  }
+
+  List<Widget> _dogumGunuKartlari() => [
+        _Kart(children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextFormField(
+              controller: _baslik,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: _yalinAlan(M.kisiAdi, Icons.cake_outlined),
+              validator: (s) => (s ?? '').trim().isEmpty ? M.adGerekli : null,
+            ),
+          ),
+        ]),
+        _Kart(children: [
+          _Satir(etiket: M.dogumTarihi, deger: _dgYilVar ? tarihTam(_dgTarih) : gunKisaMetin(_dgTarih), onTap: _dgTarihSec),
+          SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            title: const Text(M.dogumYiliBiliniyor),
+            value: _dgYilVar,
+            onChanged: (b) async {
+              setState(() => _dgYilVar = b);
+              if (b) await _dgTarihSec(); // varsayılan yıl (bu yıl) doğum yılı olamaz: hemen sor
+            },
+          ),
+          _takvimSatiri(k.takvimlerSirali, k.takvimlerSirali.where((c) => c.uid == _takvimUid).firstOrNull),
+        ]),
+        _hatirlaticiKarti(Theme.of(context)),
+      ];
+
+  /// Yalnız yeni eklemede: Etkinlik | Doğum günü.
+  Widget _turSecici() => Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Semantics(
+          label: M.turSecimi,
+          child: SegmentedButton<bool>(
+            style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(0, 48))),
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: false, icon: Icon(Icons.event_outlined), label: Text(M.turEtkinlik)),
+              ButtonSegment(value: true, icon: Icon(Icons.cake_outlined), label: Text(M.turDogumGunu)),
+            ],
+            selected: {_dogumGunu},
+            onSelectionChanged: (s) => setState(() => _dogumGunu = s.first),
+          ),
+        ),
+      );
 
   /// Kartın içinde çizgisiz, dolgusuz giriş alanı.
   InputDecoration _yalinAlan(String etiket, [IconData? simge]) => InputDecoration(
@@ -486,8 +578,10 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
     ];
   }
 
+  Set<int> get _aktifHat => _dogumGunu ? _dgHat : _hat;
+
   Widget _hatirlaticiKarti(ThemeData tema) {
-    final sirali = _hat.toList()..sort();
+    final sirali = _aktifHat.toList()..sort();
     return _Kart(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -498,9 +592,9 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
             for (final m in sirali)
               InputChip(
                 avatar: const Icon(Icons.notifications_none, size: 18),
-                label: Text(M.hatirlaticiMetni(m)),
+                label: Text(_tumGun || _dogumGunu ? M.tumGunHatirlaticiMetni(m) : M.hatirlaticiMetni(m)),
                 deleteButtonTooltipMessage: M.sil,
-                onDeleted: () => setState(() => _hat.remove(m)),
+                onDeleted: () => setState(() => _aktifHat.remove(m)),
               ),
             ActionChip(avatar: const Icon(Icons.add, size: 18), label: const Text(M.hatirlaticiEkle), onPressed: _hatirlaticiSec),
           ]),
@@ -515,19 +609,19 @@ class _EtkinlikFormuDurumu extends State<EtkinlikFormu> {
       showDragHandle: true,
       builder: (c) => SafeArea(
         child: ListView(shrinkWrap: true, children: [
-          for (final m in _hatirlaticiSecenekleri)
-            ListTile(title: Text(M.hatirlaticiMetni(m)), onTap: () => Navigator.pop(c, m)),
+          for (final m in _dogumGunu ? _dogumHatirlaticiSecenekleri : _hatirlaticiSecenekleri)
+            ListTile(title: Text(_tumGun || _dogumGunu ? M.tumGunHatirlaticiMetni(m) : M.hatirlaticiMetni(m)), onTap: () => Navigator.pop(c, m)),
           ListTile(title: const Text(M.ozelHatirlatici), onTap: () => Navigator.pop(c, -1)),
         ]),
       ),
     );
     if (secim == null || !mounted) return;
     if (secim >= 0) {
-      setState(() => _hat.add(secim));
+      setState(() => _aktifHat.add(secim));
       return;
     }
     final dk = await showDialog<int>(context: context, builder: (c) => const _DakikaSor());
-    if (dk != null && mounted) setState(() => _hat.add(dk));
+    if (dk != null && mounted) setState(() => _aktifHat.add(dk));
   }
 }
 
