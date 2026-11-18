@@ -143,9 +143,8 @@ class _AyDar extends StatefulWidget {
 }
 
 class _AyDarDurumu extends State<_AyDar> {
-  bool _hafta = false; // true: yalnız seçili günün haftası
-
   TakvimKontrol get k => widget.kontrol;
+  bool get _hafta => k.ayDaraldi; // true: yalnız seçili günün haftası
 
   /// Seçili gün = odak günü bu aydaysa o, değilse bugün (bu aydaysa) ya da ayın 1'i.
   DateTime _secili() {
@@ -195,7 +194,7 @@ class _AyDarDurumu extends State<_AyDar> {
                       ),
                   ]),
                 ),
-            Expanded(child: _GunListesi(kontrol: k, veri: veriler[secili]!, hafta: _hafta, tutamac: (v) => setState(() => _hafta = v))),
+            Expanded(child: _GunListesi(kontrol: k, veri: veriler[secili]!, hafta: _hafta, tutamac: k.ayDaralt)),
           ]);
         }),
       ),

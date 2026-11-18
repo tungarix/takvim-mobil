@@ -82,6 +82,16 @@ class TakvimKontrol extends ChangeNotifier {
   late DateTime odakGun; // duvar günü
   Gorunum gorunum;
 
+  /// Telefon ayı tutamaçla haftaya daraltılmış mı. Ay sayfası değişince (hafta ay sınırını
+  /// geçerken) yeni sayfa da daralmış açılsın diye sayfanın değil denetleyicinin durumu.
+  bool ayDaraldi = false;
+
+  void ayDaralt(bool v) {
+    if (ayDaraldi == v) return;
+    ayDaraldi = v;
+    notifyListeners();
+  }
+
   Veri get veri => store.veri;
   DateTime get simdi => saniyeye(saat());
   DateTime get bugun => gunDuvar(zaman.duvar(simdi));
@@ -148,7 +158,10 @@ class TakvimKontrol extends ChangeNotifier {
 
   void git(DateTime gun, {Gorunum? gorunum}) {
     odakGun = gunDuvar(gun);
-    if (gorunum != null) this.gorunum = gorunum;
+    if (gorunum != null) {
+      this.gorunum = gorunum;
+      ayDaraldi = false;
+    }
     sekme.value = 0;
     notifyListeners();
   }
@@ -171,6 +184,7 @@ class TakvimKontrol extends ChangeNotifier {
 
   Future<void> gorunumDegistir(Gorunum g) async {
     gorunum = g;
+    ayDaraldi = false;
     notifyListeners();
     try {
       await ayarlar.gorunumYaz(g.name);
@@ -246,8 +260,17 @@ class TakvimKontrol extends ChangeNotifier {
   /// BURADA, güncel veriyle yeniden hesaplanır (bayat önizleme sonucu yazılıp araya giren
   /// düzenlemeyi ezmesin) ve tek atomik yazmayla kalıcı olur.
   Future<ImportRaporu> senkronUygula(String metin) async {
-    final sonuc = importEt(veri, metin);
-    await store.uygula(sonuc.veri);
+    // Birleştirme store'un yazma kuyruğunun İÇİNDE, o anki güncel tabanla yapılır;
+    // dışarıda hesaplansaydı araya giren bir yap() bayat tabanla ezilirdi.
+    final rapor = await store.degistir<ImportRaporu>((kopya) {
+      final sonuc = importEt(kopya, metin);
+      final v = sonuc.veri;
+      kopya.calendars..clear()..addAll(v.calendars);
+      kopya.events..clear()..addAll(v.events);
+      kopya.tasks..clear()..addAll(v.tasks);
+      kopya.mezarlar..clear()..addAll(v.mezarlar);
+      return sonuc.rapor;
+    });
     notifyListeners();
     unawaited(bildirimleriYenile());
     try {
@@ -258,7 +281,7 @@ class TakvimKontrol extends ChangeNotifier {
       ); // veri uygulandı; yalnızca "son senkron" zamanı yazılamadı
     }
     notifyListeners();
-    return sonuc.rapor;
+    return rapor;
   }
 
   /// Hata nesnesini kullanıcıya anlaşılır Türkçe metne çevirir.
