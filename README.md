@@ -8,7 +8,7 @@
 > Built with Flutter.
 > Download the APK from [Releases](https://github.com/tungarix/takvim-mobil/releases).
 
-> **Durum:** Erken erişim (0.x), son sürüm 0.5.0 · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
+> **Durum:** Erken erişim (0.x), son sürüm 0.6.0 · **Platform:** Android (telefon öncelikli, tablet de çalışır) ·
 > **Lisans:** MIT · **İndir:** [Son sürüm](https://github.com/tungarix/takvim-mobil/releases/latest) ·
 > **Site:** [aktenak.tech](https://aktenak.tech)
 
@@ -45,13 +45,13 @@ Her sürüm GitHub Actions'ta derlenir; ekinde `SHA256SUMS.txt` ve bir build pro
 
 ```powershell
 # 1) Özet: SHA256SUMS.txt'deki değerle aynı olmalı
-Get-FileHash .\Takvim-0.5.0.apk -Algorithm SHA256
+Get-FileHash .\Takvim-0.6.0.apk -Algorithm SHA256
 
 # 2) Dosyanın bu depodan, bu iş akışıyla derlendiği (GitHub CLI gerekir)
-gh attestation verify .\Takvim-0.5.0.apk -R tungarix/takvim-mobil
+gh attestation verify .\Takvim-0.6.0.apk -R tungarix/takvim-mobil
 
 # 3) İmza sertifikası (Android SDK build-tools'taki apksigner)
-apksigner verify --print-certs Takvim-0.5.0.apk
+apksigner verify --print-certs Takvim-0.6.0.apk
 ```
 
 Sertifika SHA-256 parmak izi, her sürümde aynı olmalı:
@@ -139,6 +139,7 @@ veri göndermez. Yeni sürüm varsa Ayarlar → Güncellemeler'de görünür ve 
 
 ## Sürüm notları
 
+- **0.6.0**: etkinlik eklerken **Doğum günü** türü (her yıl tekrarlar, yaşı gösterir). **Resmi tatiller** ay, hafta, gün ve yıl görünümünde işaretlenir; Ayarlar'dan kapatılabilir. Daraltılmış ay görünümünde yana kaydırmak haftayı değiştirir. Senkron sırasında yapılan bir kayıt artık ezilmiyor. Yeni izin yok, veri biçimi değişmedi.
 - **0.5.0**: yeni, sade tasarım. Ay görünümü yenilendi (çizgisiz, büyük numaralar; seçili günün etkinlikleri altta bir kartta, kartı
   sürükleyince hafta görünümüne daralır, "N gün içinde" ve bugüne dön düğmesi), yeni **Yıl** görünümü, daha sade hafta/gün
   ızgarası, yeniden tasarlanan etkinlik formu, üst çubukta görünüm menüsü. Yeni izin yok, veri biçimi değişmedi.
