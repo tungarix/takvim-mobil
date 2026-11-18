@@ -29,6 +29,7 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
   Gorunum? _pcGorunum;
 
   TakvimKontrol get k => widget.kontrol;
+  double _surukleme = 0;
 
   DateTime _sayfaGunu(Gorunum g, int sayfa) {
     final n = sayfa - _merkez;
@@ -189,6 +190,7 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
         kolonGenisligi: (genislik - etiketGenisligi) / 3,
       );
     }
+    final daraldi = g == Gorunum.ay && dar && k.ayDaraldi;
     final pc = _denetleyici(g);
     final hedef = _sayfaNo(g, k.odakGun);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -197,9 +199,12 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
       if (p == null || p.round() == hedef) return;
       (p - hedef).abs() <= 1 ? pc.animateToPage(hedef, duration: const Duration(milliseconds: 250), curve: Curves.easeOut) : pc.jumpToPage(hedef);
     });
-    return PageView.builder(
+    final sayfalar = PageView.builder(
       controller: pc,
-      onPageChanged: (s) => k.odakAyarla(_yeniOdak(g, s)),
+      // Odak zaten bu sayfadaysa (oklarla/haftayla programatik geçiş) günü yeniden türetme.
+      onPageChanged: (s) => s == _sayfaNo(g, k.odakGun) ? null : k.odakAyarla(_yeniOdak(g, s)),
+      // Daralmış ayda yatay kaydırma sayfayı (ayı) değil haftayı değiştirir.
+      physics: daraldi ? const NeverScrollableScrollPhysics() : null,
       itemBuilder: (context, sayfa) {
         final gun = _sayfaGunu(g, sayfa);
         return switch (g) {
@@ -209,6 +214,17 @@ class _TakvimSayfasiDurumu extends State<TakvimSayfasi> {
           Gorunum.yil => YilGorunumu(key: ValueKey('yil-$gun'), kontrol: k, yil: gun.year),
         };
       },
+    );
+    if (!daraldi) return sayfalar;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) => _surukleme = 0,
+      onHorizontalDragUpdate: (d) => _surukleme += d.primaryDelta ?? 0,
+      onHorizontalDragEnd: (_) {
+        if (_surukleme.abs() < 40) return;
+        k.odakAyarla(gunEkle(k.odakGun, _surukleme < 0 ? 7 : -7));
+      },
+      child: sayfalar,
     );
   }
 }

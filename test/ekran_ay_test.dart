@@ -63,4 +63,38 @@ void main() {
     expect(s.k.gorunum, Gorunum.gun);
   });
 
+  testWidgets('haftaya daralmış telefon ayında yatay kaydırma haftayı değiştirir, açıkken ayı', (tester) async {
+    telefonBoyutu(tester);
+    final s = await kontrolKur(tester);
+    await uygulamaAc(tester, s.k);
+    await gorunumSec(tester, 'Ay');
+    await tester.tap(find.text('10'));
+    await tester.tap(find.bySemanticsLabel('Ayı haftaya daralt'));
+    await tester.pumpAndSettle();
+
+    await tester.fling(find.text('11'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(s.k.odakGun, DateTime.utc(2026, 11, 17)); // aynı hafta günü, bir sonraki hafta
+    expect(s.k.ayDaraldi, isTrue);
+    await tester.fling(find.text('18'), const Offset(300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(s.k.odakGun, DateTime.utc(2026, 11, 10));
+
+    // Hafta ay sınırını geçince başlık ve ay sayfası da ilerler, daralma korunur.
+    s.k.odakAyarla(DateTime.utc(2026, 11, 24)); // sayfada görünmeyen güne elle taşı
+    await tester.pumpAndSettle();
+    await tester.fling(find.text('25'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(s.k.odakGun, DateTime.utc(2026, 12, 1));
+    expect(find.text('Aralık 2026'), findsOneWidget);
+    expect(s.k.ayDaraldi, isTrue);
+
+    // Açık halde kaydırma ayı değiştirir.
+    s.k.ayDaralt(false);
+    await tester.pumpAndSettle();
+    await tester.fling(find.text('Etkinlik yok'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(s.k.odakGun.month, 1);
+    expect(s.k.odakGun.year, 2027);
+  });
 }

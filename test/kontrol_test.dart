@@ -2,7 +2,9 @@
 // Ayrı dosya = ayrı flutter_tester süreci: tek süreçte çok sayıda kare çizmek bu makinedeki
 // (Windows) motor çökmesine (0xC0000005) daha sık denk geliyordu.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:takvim/core/veri.dart';
 import 'package:takvim/platform/bildirim.dart';
+import 'package:takvim/sync/export.dart';
 
 import 'sahte.dart';
 import 'yardimci.dart';
@@ -37,6 +39,18 @@ void main() {
       await s.k.yap((v) => v.addEvent(etkinlik(s.k, 'e1', 'Toplantı', hatirlatici: [10])));
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(s.bildirim.izinIstendi, isTrue);
+    });
+
+    test('senkron uygulanırken araya giren yap() kaybolmaz', () async {
+      final s = await kontrolKurDuz();
+      final diger = Veri(saat: s.k.veri.saat)..addCalendar('Dış', '#3b82f6');
+      final metin = disaAktarMetin(diger, const CihazBilgisi(id: 'x', name: 'y'));
+      // yap() önce kuyruğa girer; senkron ondan SONRA, güncel tabanla birleşmeli.
+      final a = s.k.yap((v) => v.addEvent(etkinlik(s.k, 'e-ara', 'Ara')));
+      final b = s.k.senkronUygula(metin);
+      await Future.wait([a, b]);
+      expect(s.k.veri.events.containsKey('e-ara'), isTrue);
+      expect(s.k.veri.calendars.values.any((c) => c.name == 'Dış'), isTrue);
     });
   });
 }
