@@ -10,6 +10,7 @@ import '../core/recurrence.dart';
 import '../core/tekrar.dart';
 import '../core/yerel_zaman.dart';
 import 'bicim.dart';
+import 'dogum_gunu.dart';
 import 'etkinlik_formu.dart';
 import 'metin.dart';
 
@@ -169,6 +170,7 @@ class _Detay extends StatelessWidget {
     final tema = Theme.of(context);
     final e = kontrol.veri.events[ornek.eventUid];
     final takvim = e == null ? null : kontrol.veri.calendars[e.calendarUid];
+    final dogum = dogumGunuBilgisi(kontrol, ornek);
     Widget satir(IconData ikon, String metin) => Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -191,8 +193,9 @@ class _Detay extends StatelessWidget {
           satir(Icons.schedule, _zamanMetni()),
           if ((ornek.location ?? '').isNotEmpty) satir(Icons.place_outlined, ornek.location!),
           if ((ornek.description ?? '').isNotEmpty) satir(Icons.notes, ornek.description!),
+          if (dogum != null) satir(Icons.cake_outlined, dogum.yas == null ? M.turDogumGunu : M.yasinaGiriyor(dogum.yas!)),
           if (e != null && e.isRecurring) satir(Icons.repeat, tekrarOzeti(e)),
-          if (e != null && e.reminders.isNotEmpty) satir(Icons.notifications_none, e.reminders.map(M.hatirlaticiMetni).join(', ')),
+          if (e != null && e.reminders.isNotEmpty) satir(Icons.notifications_none, e.reminders.map(e.allDay ? M.tumGunHatirlaticiMetni : M.hatirlaticiMetni).join(', ')),
           const SizedBox(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
             TextButton.icon(
