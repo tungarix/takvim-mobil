@@ -43,7 +43,39 @@ void main() {
     s.k.ayDaralt(true);
     await tester.pumpAndSettle();
     expect(find.text('Etkinlik3'), findsNWidgets(2)); // hafta satırında üçü de sığar
+  });
 
+  testWidgets('seçili gün hücresi komşularıyla aynı sayıda şerit gösterir (çerçeve alanı küçültmez)', (tester) async {
+    telefonBoyutu(tester);
+    final s = await kontrolKur(tester);
+    // Bugünün komşusu 4 Kasım'a iki etkinlik; sonra 4'ü seç.
+    await ekle(tester, s.k, (v) {
+      for (var i = 1; i <= 2; i++) {
+        v.addEvent(etkinlik(s.k, 'e$i', 'Etkinlik$i'));
+      }
+    });
+    await ayAc(tester, s.k);
+    expect(find.text('+1'), findsNothing); // bugün (seçili) iki etkinlik: ikisi de şeritte, "+1" yok
+    expect(find.text('Etkinlik2'), findsNWidgets(2));
+  });
+
+  testWidgets('alçak telefonda (320x568, yazı ölçeği 2) ay ve daralmış hafta taşmaz', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    final s = await kontrolKur(tester);
+    await ekle(tester, s.k, (v) {
+      for (var i = 1; i <= 5; i++) {
+        v.addEvent(etkinlik(s.k, 'e$i', 'Etkinlik$i'));
+      }
+    });
+    await ayAc(tester, s.k);
+    expect(tester.takeException(), isNull);
+    s.k.ayDaralt(true);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('geniş ekranda şeritte saat + başlık; hücre çok alçaksa noktalara düşer', (tester) async {
@@ -58,6 +90,8 @@ void main() {
     tester.view.physicalSize = const Size(900, 400);
     await tester.pumpAndSettle();
     expect(find.text('14:00 Toplantı'), findsNothing);
+    // Noktalara düşüş: 6x6 renkli daire var.
+    expect(find.byWidgetPredicate((w) => w is Container && w.constraints?.maxWidth == 6 && w.constraints?.maxHeight == 6), findsWidgets);
   });
 
   testWidgets('resmi tatil şeridi görünür, ayar kapanınca kaybolur', (tester) async {

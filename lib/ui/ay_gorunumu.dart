@@ -151,14 +151,16 @@ class _Seritler extends StatelessWidget {
         k--;
       }
       if (k == 0) return _Noktalar(renkler: [for (final s in seritler) s.renk], genislik: kisit.maxWidth, yer: kisit.maxHeight);
-      return ClipRect(
+      return Opacity(
+        opacity: buAy ? 1 : .5, // ay dışı günler soluk
+        child: ClipRect(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           for (final s in seritler.take(k))
             Padding(padding: const EdgeInsets.only(bottom: _ara), child: SizedBox(height: _yuk, child: _SeritCubugu(s, ellipsis: genis))),
           if (t > k)
-            SizedBox(height: _artiYuk, child: Text('+${t - k}', style: TextStyle(fontSize: 9, height: 1.2, color: renk.onSurfaceVariant.withValues(alpha: buAy ? 1 : .6)))),
+            SizedBox(height: _artiYuk, child: Text('+${t - k}', style: TextStyle(fontSize: 9, height: 1.2, color: renk.onSurfaceVariant))),
         ]),
-      );
+      ));
     });
   }
 }
@@ -284,7 +286,9 @@ class _AyDarDurumu extends State<_AyDar> {
       // Satır yüksekliği: kalan yüksekliğin ~%60'ı satırlara bölünür (60-78); daralmış haftada şeritler için 130.
       Expanded(
         child: LayoutBuilder(builder: (context, kisit) {
-          final h = _hafta ? 130.0 : (kisit.maxHeight * .6 / satir).clamp(60.0, 78.0);
+          // Liste kartına en az 150dp kalır (alçak ekranda satırlar kısalır, şerit sığmazsa noktalara düşer).
+          final yer = ((kisit.maxHeight - 150) / (_hafta ? 1 : satir)).clamp(30.0, 400.0);
+          final h = (_hafta ? yer.clamp(30.0, 130.0) : (kisit.maxHeight * .6 / satir).clamp(60.0, 78.0).clamp(30.0, yer)).toDouble();
           return Column(children: [
             for (var r = 0; r < satir; r++)
               if (!_hafta || r == seciliSatir)
@@ -331,7 +335,8 @@ class _DarHucre extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.all(1),
           padding: const EdgeInsets.fromLTRB(2, 3, 2, 1),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: secili ? Border.all(color: renk.primary, width: 1.5) : null),
+          // Çerçeve önde çizilir: içerik alanı küçülmez, tüm hücreler aynı sayıda şerit sığdırır.
+          foregroundDecoration: secili ? BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: renk.primary, width: 1.5)) : null,
           child: Column(children: [
             _GunSayisi(veri: veri, bugunMu: gun == kontrol.bugun, buAy: buAy),
             const SizedBox(height: 2),
